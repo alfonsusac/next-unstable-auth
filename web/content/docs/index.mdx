@@ -1,0 +1,74 @@
+---
+title: Getting Started
+---
+ 
+NextJWTAuth is a JWT-based authentication library designed specifically for **Next.js 15 App Router**. This library aims to streamline JWT handling in Next.js apps by providing robust, flexible tools for managing tokens, securing API routes, and supporting both server-side and client-side authentication flows.
+
+<div className="steps [&_h3]:step">
+
+### Installation
+
+  To install NextJWTAuth, run the following command:
+
+  ```bash
+  npm install nextjwtauth
+  ```
+
+
+### Environment Variables
+
+  Create a `.env.local` file in the root of your project and add the following environment variables:
+  ```shell
+  NEXT_JWT_AUTH_SECRET="your-secret-key"
+  NEXT_JWT_AUTH_PATH="/api/auth"
+  ```
+
+### Configure
+
+  Import the `NextJWTAuth` function and any providers you want to use in your app. Then, create an instance of `NextJWTAuth` with your desired configuration options.
+
+  In this example, we're using the `Google` provider to enable Google OAuth authentication:
+
+  ```ts
+  import { NextJWTAuth } from "@/package/auth";
+  import { Google } from "@/package/providers/google";
+
+  export const auth = NextJWTAuth({
+    providers: {
+      google: Google({
+        client_id: process.env.GOOGLE_ID,
+        client_secret: process.env.GOOGLE_SECRET,
+      })
+    },
+    apiRoute: '/api/auth',
+  })
+  ```
+  
+
+### Usage
+
+  Simply import `auth` from your configuration file and use it in your Next.js app:
+
+  ```tsx
+  import { auth } from "@/package/auth";
+
+  export default function Page() {
+    const session = auth.getSession();
+    return (
+      <form>
+        {session 
+          ? <button formAction={async () => {
+            "use server"
+            await auth.signOut()
+          }}>Sign Out</button>
+          : <button formAction={async () => {
+            "use server"
+            await auth.signIn("google")
+          }}>Sign In</button>
+        }
+      </form>
+    )
+  }
+  ```
+
+</div>

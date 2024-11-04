@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fd-nav-height: 3.5rem !important
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+  @apply border border-zinc-500/20 p-2 px-6 rounded-md
+  transition-all duration-75 hover:bg-zinc-500/10
+}

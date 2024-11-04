@@ -1,0 +1,19 @@
+---
+title: Client API
+---
+ 
+NextJWTAuth offers a client API that can be used to interact with the NextJWTAuth server. The client API is available in the form of a method that can be used in the browser or in Node.js. The methods returned by the client API calls the NextJWTAuth server to perform the requested operation such as login, logout, and refresh token.
+
+
+<div className="steps [&_h3]:step">
+
+### Configuration
+
+```ts title="lib/client.ts"
+import { createAuthClient } from 'nextjwtauth/client';
+import type Config from '@/lib/config';
+
+export const authClient = createAuthClient<Config>()
+```
+
+</div>

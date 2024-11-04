@@ -1,5 +1,5 @@
 import { HandlerRequestContext } from "../api/handler/context";
-import { AuthenticateParams, AuthenticateReturn, AuthorizeReturn, Provider } from "../providers";
+import { AuthenticateParams, AuthenticateReturn, AuthorizeReturn, CredSchema, Provider } from "../providers";
 
 type InitiateOAuthParams = Omit<AuthenticateParams, "handlerContext">
 
@@ -9,8 +9,8 @@ export function OAuthProvider<A = any, I = any>($: {
   refreshToken?: (refreshToken: I) => Promise<AuthorizeReturn<I>>,
 } & Omit<Provider, "authorize" | "authenticate" | "credentials">) {
 
-  return Provider<never, A, I>({
-    "authenticate": async (param: AuthenticateParams<never>): Promise<{ data: A; internal: I; }> => {
+  return Provider<CredSchema, A, I>({
+    "authenticate": async (param: AuthenticateParams<CredSchema>): Promise<{ data: A; internal: I; }> => {
       if (!param.handlerContext) {
         return await $.initiateOAuth(param)
       }

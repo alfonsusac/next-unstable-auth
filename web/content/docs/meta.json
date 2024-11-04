@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "index",
+    "client",
+
+    "---Authentication---",
+
+    "providers/sso",
+
+    "---Reference---",
+
+    "reference/rest",
+    "reference/config"
+  ]
+}
