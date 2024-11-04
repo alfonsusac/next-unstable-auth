@@ -1,0 +1,25 @@
+{
+  "name": "lib",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20",
+    "arctic": "^2.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "next": ">=13.4",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "react": "19.0.0-rc-69d4b800-20241021"
+  }
+}
