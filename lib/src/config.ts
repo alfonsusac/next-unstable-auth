@@ -1,9 +1,9 @@
 import { Providers } from "./providers"
 
 export type GetDefaultJ<P extends Providers> =
-  ReturnType<P[keyof P]['authorize']> extends infer A
+  ReturnType<P[keyof P]['authenticate']> extends infer A
   ? A extends Promise<infer B>
-  ? B extends { defaultUser: infer U }
+  ? B extends { data: infer U }
   ? U : B : A : never
 
 export type Config<
@@ -39,7 +39,7 @@ export type Config<
    * The callback that will be called before JWT is stored.
    */
   toJWT?: (
-    data: Awaited<ReturnType<P[keyof P]['authorize']>>
+    data: Awaited<ReturnType<P[keyof P]['authenticate']>>['data']
   ) => J,
   /**
    * The callback that will be called to transform the JWT after it is read.

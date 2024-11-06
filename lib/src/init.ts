@@ -3,11 +3,11 @@ import { Config, defaultUserAuthorizeReturn, GetDefaultJ } from "./config"
 import { CookieStore, OneTimeCookieStore } from "./util/cookie"
 import { InvalidConfigError, InvalidParameterError } from "./util/error"
 import { redirect as next_redirect } from "next/navigation"
-import { InitializedProvider, Providers } from "./providers"
+import { InitializedProvider, Provider, Providers } from "./providers"
 import { createSessionStore, SessionStore } from "./api/session"
 
 export type AuthUtils<
-  P extends Providers = any,
+  P extends Providers = Providers,
   J = any,
   I = any
 > = {
@@ -18,12 +18,10 @@ export type AuthUtils<
   redirect(url: string): never
   headers(): Promise<Pick<Awaited<Headers>, "get" | "has">>,
   validateProviderID: <ID extends string | number>(id: ID) => InitializedProvider<P[ID], ID>
-
 }
 
-
 export type AuthContext<
-  P extends Providers = any,
+  P extends Providers = Providers,
   J = GetDefaultJ<P>,
   S = J
 > = Required<Config<P, J, S>> & AuthUtils<P, J>
@@ -51,7 +49,7 @@ export function init<C extends Config>(config: C) {
   const authURL = new URL(apiRoute, baseURL).toString()
 
   const providers = config.providers
-  const validateProviderID = <ID extends string | number>(id: ID): InitializedProvider<P, ID> => {
+  const validateProviderID = <ID extends string | number>(id: ID): InitializedProvider<P[ID], ID> => {
     if (!id) throw new InvalidParameterError(`Provider ID is required`)
     if (!providers[id]) throw new InvalidParameterError(`Provider ${ id } not found`)
     return { ...providers[id], id }
@@ -69,6 +67,7 @@ export function init<C extends Config>(config: C) {
     if (defaultUserAuthorizeReturn in data) {
       return data[defaultUserAuthorizeReturn]
     }
+    return data
   }))(data)
 
   // automatic refresh token here?

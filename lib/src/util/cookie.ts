@@ -45,11 +45,15 @@ export class OneTimeCookieStore {
     public readonly param?: CookieOptions,
   ) { }
   async set(value: string) {
+    console.log(this.name)
     await cookie.set(this.name, value, getCookieOptions(this.param))
   }
   async use() {
+    console.log(this.name)
     const result = await cookie.get(this.name)
+    console.log(result, "A")
     await cookie.clear(this.name)
+    console.log(result, "B")
     return result
   }
   async verify(value?: string | null) {

@@ -24,13 +24,19 @@ export const Google = (config: GoogleOAuthConfig) => {
   const oauthCsrfCookie = new OneTimeCookieStore('google-oauth-csrf', {
     httpOnly: true,
     secure: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
   })
   const codeVerifierCookie = new OneTimeCookieStore('google-oauth-code-verifier', {
     httpOnly: true,
     secure: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
   })
+  const redirectCookie = new OneTimeCookieStore('google-oauth-redirect', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+  })
+  
   const google = (redirectURI: string) => new GoogleArctic(
     config.clientId,
     config.clientSecret,
@@ -42,8 +48,13 @@ export const Google = (config: GoogleOAuthConfig) => {
       const nonce = generateNonce()
       await oauthCsrfCookie.set(nonce)
 
+      console.log(nonce)
+
       const codeVerifier = generateNonce()
       await codeVerifierCookie.set(codeVerifier)
+
+      const redirectURI = $.callbackURI
+      await redirectCookie.set(redirectURI)
 
       const stateArr = [nonce] as string[]
 
@@ -54,8 +65,11 @@ export const Google = (config: GoogleOAuthConfig) => {
       const url = google($.callbackURI).createAuthorizationURL(state, codeVerifier, scopes)
 
       if (config.enableRefreshToken) {
+        url.searchParams.set('prompt', 'consent')
         url.searchParams.set('access_type', 'offline')
       }
+
+      console.log(url.toString())
 
       return redirect(url.toString())
     },
@@ -69,19 +83,34 @@ export const Google = (config: GoogleOAuthConfig) => {
 
       const [csrf, context] = state.split('|')
 
+      console.log(state, "state")
+      console.log(csrf, "csrf")
+      
       const storedState = await oauthCsrfCookie.use();
+      console.log(storedState, "storedStaate")
       if (csrf !== storedState) throw new InvalidParameterError('Invalid state. Possible CSRF attack')
 
       const storedCodeVerifier = await codeVerifierCookie.use();
       if (!storedCodeVerifier) throw new InvalidParameterError('No code verifier found. Possible CSRF attack')
 
-      const tokens = await google("").validateAuthorizationCode(code, storedCodeVerifier)
+      const storedRedirect = await redirectCookie.use();
+      if (!storedRedirect) throw new InvalidParameterError('No redirect URI found. Possible CSRF attack')
+      
+      const tokens = await google(storedRedirect).validateAuthorizationCode(code, storedCodeVerifier)
+
+      console.log(tokens)
 
       const claims = decodeIdToken(tokens.idToken()) as GoogleTokenClaims
 
+      console.log(claims)
+
       let refreshToken: string | undefined
+
+      console.log("refresh token enabled?:", config.enableRefreshToken)
+
       if (config.enableRefreshToken) {
         refreshToken = tokens.refreshToken()
+        console.log("REFRESHTOKEN: ", refreshToken)
       }
 
       return {

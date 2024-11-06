@@ -35,11 +35,10 @@ export type CredSchema = {
     // }
     ``` 
     */
-export type CredValues<C extends CredSchema = CredSchema> = { [key in keyof C]: C[key]['type'] extends 'text' ? string : number }
+export type CredValues<C extends CredSchema> = { [key in keyof C]: C[key]['type'] extends 'text' ? string : number }
 
 //  Provider 
 // ----------------------------------------------------------------------------
-export const Provider = <C extends CredSchema, A, I>(params: Provider<C, A, I>) => params
 export type Provider<
   C extends CredSchema = CredSchema,
   A = any,
@@ -52,12 +51,14 @@ export type Provider<
   /** The function that will be called to authorize the user. */
   authorize: (data: I) => Promise<AuthorizeReturn<I>>
 }
+export const Provider = <C extends CredSchema, A, I>(params: Provider<C, A, I>) => params
+
 export type Providers = { [key: string]: Provider }
 
 
 export type AuthenticateParams<C extends CredSchema = CredSchema> = {
   /** The `credentials` provided by the user, according to the schema configured in the config. */
-  credentials: CredValues<C>
+  credentials: C extends infer X ? CredSchema extends X ? never : { [key in keyof C]: C[key]['type'] extends 'text' ? string : number } : never // this wackjob is necessary for NextJWTAuth() config type to work
   /** The `URI` that OAuth provider will redirect to after the user has authorized the app. */
   callbackURI: string
   /** The `URI` that the user will be redirected to after the `signIn()` flow completes */
@@ -77,7 +78,7 @@ export type AuthorizeReturn<I> = { update: false } | {
 }
 
 export type ProviderCredentialValues<P extends Provider> =
-  P['fields'] extends infer C ? CredSchema extends C ? never : C extends CredSchema ? CredValues<C> : never : never
+  P['fields'] extends infer F ? CredSchema extends F ? never : F extends CredSchema ? CredValues<F> : never : never
 
 //  Initialized Provider 
 // ----------------------------------------------------------------------------
@@ -89,23 +90,16 @@ export type ProviderCredentialValues<P extends Provider> =
 // > = Provider<C, A, I> & { id: ID }
 export type InitializedProvider<
   P extends Provider = Provider,
-  ID = string | number
+  ID extends string | number = string | number
 > = P & { id: ID }
 
-export function initializeProviders<P extends Providers>(providers: P) {
+export function initializeProviders<P extends Providers = Providers>(providers: P) {
   return Object.fromEntries(
     Object.entries(providers).map(
       ([key, value]) => [key, { ...value, id: key }]
     )
-  ) as { [key in keyof P]: InitializedProvider<P[key], key> }
+  ) as { [key in Exclude<keyof P, symbol>]: InitializedProvider<P[key], key> }
 }
-
-class InitializedProviders<P extends Providers> {
-  constructor(providers: Providers) {
-
-  }
-}
-
 
 // export function validateProviderID<P extends Providers>(
 //   providers: P,

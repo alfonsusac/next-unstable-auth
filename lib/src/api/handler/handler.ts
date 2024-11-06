@@ -15,9 +15,9 @@ export function getNextHandlerFunctions(authContext: AuthContext) {
   // Handles errors
   function handleError(error: unknown) {
     if (isRedirectError(error)) throw error
+    console.error(error)
     if (error instanceof InvalidParameterError) return Response.json({ error: 'Invalid Request' }, { status: 400 })
     if (error instanceof SyntaxError) return Response.json({ error: 'Invalid Request' }, { status: 400 })
-    console.error(error)
     if (error instanceof InvalidConfigError) return Response.json({ error: 'Invalid Configuration' }, { status: 500 })
     if (error instanceof Error) return Response.json({ error: `[${ error.name }]: ${ error.message }` }, { status: 500 })
     return Response.json({ error }, { status: 500 })
@@ -41,20 +41,20 @@ export function getNextHandlerFunctions(authContext: AuthContext) {
   // Handles GET requests
   async function handleGet($: C) {
     if ($.route === "callback")
-      return await signInCallbackFlow($)
+      return Response.json(await signInCallbackFlow($))
     if ($.route === "csrf")
-      return await createCSRFFlow($)
+      return Response.json(await createCSRFFlow($))
     if ($.route === "session")
-      return await getSessionFlow($)
+      return Response.json(await getSessionFlow($))
     return $.defaultResponse();
   }
 
   // Handles POST requests
   async function handlePost($: C) {
     if ($.route === "signIn")
-      return await handleSignInFlow($)
+      return Response.json(await handleSignInFlow($))
     if ($.route === "signOut")
-      return await signOutFlow($)
+      return Response.json(await signOutFlow($))
     return $.defaultResponse();
   }
 

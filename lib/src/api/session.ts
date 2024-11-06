@@ -1,4 +1,6 @@
+import { JsonWebTokenError } from "jsonwebtoken"
 import { isReadonlyCookieResponseError } from "../util/cookie"
+import { InvalidParameterError } from "../util/error"
 import { jwt } from "../util/jwt"
 import { cookies } from "next/headers"
 
@@ -58,11 +60,12 @@ export const createSessionStore = <J, I>(expiry: number, secret: string, cookieE
     },
 
     "get": async () => {
-      const cookie = await cookies()
-      const token = cookie.get("ns-auth")?.value
-      if (!token) return null
       try {
-        const internalSessionToken = jwt.verify(token, secret) as InternalSession<J, I>
+        const cookie = await cookies()
+        const token = cookie.get("ns-auth")?.value
+        if (!token) return null
+
+        const internalSessionToken = jwt.verify(token, secret) as InternalSession<Awaited<J>, I>
         // TODO - sanitize the token
         let expired = false
         if (internalSessionToken.e < Math.floor(Date.now() / 1000)) {
@@ -78,7 +81,7 @@ export const createSessionStore = <J, I>(expiry: number, secret: string, cookieE
           expired,
         }
       } catch (error) {
-        console.log("Something went wrong in sessionStore.get()", error)
+        await sessionStore.clear()
         throw error
       }
     }

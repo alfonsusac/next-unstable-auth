@@ -13,7 +13,9 @@ export default function DemoPage() {
 }
 
 async function DemoContent() {
-  const session = await auth.getSession();
+  const { session, error } = await auth.getSession();
+  console.log(error);
+  
   return (
     <form className="relative border-zinc-500/20 border-t-transparent border w-full max-w-2xl">
       <div className="sticky h-0 bg-zinc-500/20 z-50 self-stretch">
@@ -28,7 +30,7 @@ async function DemoContent() {
         <button
           formAction={async () => {
             "use server";
-            await auth.signIn("google", undefined);
+            await auth.signIn("google");
           }}
         >
           Sign In via Google

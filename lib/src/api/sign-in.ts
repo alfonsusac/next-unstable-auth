@@ -59,16 +59,15 @@ export async function signInFlow<P extends InitializedProvider>(
 // The point below is when the flow doesn't require redirecting to the provider's site. 
 // such as when using a password provider.
 
-
 export async function signInCallbackFlow($: RouteHandlerContext) {
 
   const provider = $.validateProviderID($.segments[1])
   const callbackURI = $.authURL + '/callback/' + provider.id
 
   const { data, internal } = await provider.authenticate({
-    credentials: {},
+    credentials: {} as never,
     callbackURI,
-    $,
+    handlerContext: $,
   })
 
   const token = await $.toJWT(data)
@@ -86,20 +85,6 @@ export async function signInCallbackFlow($: RouteHandlerContext) {
  * Validates the parameters for the signIn function for the sake of 
  * making the signIn function easier to use.
  */
-
-
-// export type SignInParams<
-//   P extends Providers = {},
-//   ID extends string | number = string | number,
-// > = [
-//     id: ID,
-//     ...P[ID]['fields'] extends infer C ?
-//     CredSchema extends C ? []
-//     : C extends CredSchema ? [credentials: CredValues<C>] : []
-//     : [],
-//     // ...ParseProvidersCredentials<P, ID>,
-//     options?: SignInOptions
-//   ]
 
 export type SignInParams<
   P extends Providers = Providers,
@@ -135,12 +120,25 @@ export function validateSignInParameters<
       throw new InvalidParameterError('Second Parameter: credentials must be an object.')
     if (third && typeof third !== 'object')
       throw new InvalidParameterError('Third Parameter: options must be an object if provided.')
-    
+
     // TODO - validate options
+    const schema = provider.fields
+    const credentialValues = second as ProviderCredentialValues<P[ID]>
+    for (const key in schema) {
+      if (key in second === false) {
+        throw new InvalidParameterError(`Second Parameter: Missing field: ${ key }`)
+      }
+      if (key in second && schema[key].type === "number" && typeof credentialValues[key] !== "number") {
+        throw new InvalidParameterError(`Second Parameter: Field ${ key } must be a number`)
+      }
+      if (key in second && schema[key].type === "text" && typeof credentialValues[key] !== "string") {
+        throw new InvalidParameterError(`Second Parameter: Field ${ key } must be a number`)
+      }
+    }
 
     return {
       provider,
-      credentials: second as ProviderCredentialValues<P[ID]>,
+      credentials: credentialValues,
       options: third ?? {},
     }
   }
