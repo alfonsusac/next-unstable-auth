@@ -88,15 +88,16 @@ export async function signInCallbackFlow($: RouteHandlerContext) {
 
 export type SignInParams<
   P extends Providers = Providers,
-  ID extends string | number = string | number,
+  ID extends keyof P = string | number,
 > = Providers extends P ? [ID, unknown, unknown] :
   string | number extends ID ? [ID, unknown, unknown] :
   [
     id: ID,
-    ...P[ID]['fields'] extends infer C ?
-    CredSchema extends C ? []
-    : C extends CredSchema ? [credentials: CredValues<C>] : []
-    : [],
+    ...P[ID]['fields'] extends infer C ? CredSchema extends C ? [] : [creds: C extends CredSchema ? CredValues<C> : never] : [],
+    // ...P[ID]['fields'] extends infer C ?
+    // CredSchema extends C ? []
+    // : C extends CredSchema ? [credentials: CredValues<C>] : []
+    // : [],
     options?: SignInOptions
   ]
 

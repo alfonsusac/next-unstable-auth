@@ -8,10 +8,7 @@ import { InvalidParameterError } from "./util/error"
 export type CredSchemaField = {
   type: "text" | "number"
 }
-export type CredSchema = {
-  [key: string]: CredSchemaField
-}
-
+export type CredSchema = Record<string | number, CredSchemaField>
 /** ------------------------------------------------------------
     Converts a CredentialsSchema into a type that represents the values of the credentials.
     
@@ -35,7 +32,8 @@ export type CredSchema = {
     // }
     ``` 
     */
-export type CredValues<C extends CredSchema> = { [key in keyof C]: C[key]['type'] extends 'text' ? string : number }
+// export type CredValues<C extends CredSchema> = { [key in keyof C]: C[key]['type'] extends 'text' ? string : number }
+export type CredValues<C extends CredSchema> = Record<keyof C, C[keyof C]['type'] extends 'text' ? string : number>
 
 //  Provider 
 // ----------------------------------------------------------------------------

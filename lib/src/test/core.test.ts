@@ -1,9 +1,9 @@
 import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
-import { NextJWTAuth } from '../src'
-import { Provider } from '../src/providers'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { jwt } from '../src/util/jwt'
+import { Provider } from '../providers'
+import { NextJWTAuth } from '../nextjwtauth'
+import { jwt } from '../util/jwt'
 
 // Mock 
 // ------------------------------------------------------------------------
@@ -177,9 +177,17 @@ describe('auth using server functions', () => {
   it(('invalid parameters'), async () => {
     const auth = InitializeNextJWTAuth()
 
-    await expect((auth.signIn as any)()).rejects.toThrowError('Provider ID is required')
-    await expect((auth.signIn as any)('')).rejects.toThrowError('Provider ID is required')
-    await expect((auth.signIn as any)('hello', { password: '' })).rejects.toThrowError('Missing field: email')
+    // Note: TS Expect Error for testing
+    // @ts-expect-error Expected 1 arguments, but got 0.
+    await expect(auth.signIn()).rejects.toThrowError('Provider ID is required')
+    // @ts-expect-error No provider ''
+    await expect(auth.signIn('')).rejects.toThrowError('Provider ID is required')
+    // @ts-expect-error Requires credentials for this provider.
+    await expect(auth.signIn('hello')).rejects.toThrowError('Missing field: email')
+    // @ts-expect-error Wrong type for credentials
+    await expect(auth.signIn('hello', { password: '' })).rejects.toThrowError('Missing field: email')
+    // @ts-expect-error Should not have password field
+    await expect(auth.signIn('passwordlessRedirect', { password: '' })).rejects.toThrowError('Missing field: email')
 
     const session2 = await auth.getSession()
     expect(session2).toBeNull()
