@@ -11,6 +11,8 @@ export async function getSessionFlow<
   { session: null, error: Error }
 > {
 
+  console.log("⭐️ Get Session")
+
   try {
     const session = await $.sessionStore.get()
     if (!session) return { session: null, error: null }

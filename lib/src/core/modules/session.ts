@@ -35,8 +35,8 @@ export class Session<P extends Providers, T> {
     cookie: Cookie,
     jwt: JWT,
     token: Awaited<T>,
-    providerId: keyof P,
-    internal: any,
+    providerId?: keyof P,
+    internal?: any,
   ) {
     if (typeof providerId !== 'string')
       throw Error('Session.set(): invalid providerId')
@@ -95,7 +95,7 @@ export class Session<P extends Providers, T> {
         expiry: session.e,
       },
       expired: session.e < nowInSeconds(),
-    } as InternalSession<T>
+    } as InternalSession<Awaited<T>>
   }
 
 

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { cookies } from "next/headers";
 import { ReactNode, SVGProps } from "react";
 import { codeToHtml } from "shiki";
@@ -27,6 +28,7 @@ export default async function Home() {
       </div>
       <div className="text-center pt-24 py-16 flex flex-col gap-1 items-center border-b border-zinc-500/10">
         <img
+          alt="Doobie.js"
           src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f510.svg"
           width="48"
           height="48"
@@ -135,7 +137,7 @@ export default async function Home() {
   );
 }
 
-export function SolarCheckCircleBoldDuotone(props: SVGProps<SVGSVGElement>) {
+function SolarCheckCircleBoldDuotone(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

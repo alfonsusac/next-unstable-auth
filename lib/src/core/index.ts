@@ -41,98 +41,106 @@ export function AuthCore<
   // Sign In
   // ---------------------------------------------------------------
 
-  const signIn = async <ID extends keyof P>(
-    id: ID extends string ? ID : string,
-    credentials: P[keyof P]['fields'] extends () => infer F ? F : undefined,
-    options: {
-      redirectTo?: string,
-    },
-    context: Context
-  ) => {
-    const provider
-      = validateProviderId(config.providers, id)
+  const signIn
+    = async <ID extends keyof P>
+      (
+        id:
+          ID extends string ? ID : string,
+        credentials:
+          P[keyof P]['fields'] extends () => infer F ? F : undefined,
+        options:
+          { redirectTo?: `/${string}` },
+        context: Context
+      ) => {
+      const provider
+        = validateProviderId(config.providers, id)
 
-    const session
-      = await base.signIn<P[keyof P], T, S>(
-        provider,
-        {
-          providerId: id,
+      const session
+        = await base.signIn<P[keyof P], T, S>(
+          provider,
+          id,
           credentials,
-          options,
-          context,
-          sessionStore,
-          toToken,
-          toSession,
-          validateToken: config.validate,
-        })
+          {
+            redirectTo: options.redirectTo,
+            callbackPath: `/${config.baseAuthURL}/callback/${id}`,
+            context,
+            sessionStore,
+            toToken,
+            toSession,
+            validate: config.validate,
+          }
+        )
 
-    return session
-  }
+      return session
+    }
 
   // Sign Out
   // ---------------------------------------------------------------
 
-  const signOut = async (context: Context) => {
-    await sessionStore.clear(context.cookie)
-    return true
-  }
+  const signOut
+    = async (context: Context) => {
+      await sessionStore.clear(context.cookie)
+      return true
+    }
 
 
   // Get Session
   // ---------------------------------------------------------------
 
-  const getSession = async (context: Context) => {
+  const getSession
+    = async (context: Context) => {
 
-    const { token, expired }
-      = await sessionStore.get(
-        context.cookie,
-        context.jwt,
-      )
+      const { token, expired }
+        = await sessionStore.get(
+          context.cookie,
+          context.jwt,
+        )
 
-    if (!token) return { session: null, error: null }
+      if (!token)
+        return { session: null, error: null }
 
-    const provider
-      = validateProviderId(config.providers, token.providerId)
+      const provider
+        = validateProviderId(config.providers, token.providerId)
 
-    let updated
-      = false
+      let updated
+        = false
 
-    let newToken
-      = token.data as Awaited<T>
+      let newToken
+        = token.data as Awaited<T>
 
-    let newInternalData
-      = token.internal
+      let newInternalData
+        = token.internal
 
-    if (expired) {
-      newInternalData = await provider.authorize(token.internal, context)
-      updated = true
+      if (expired) {
+        newInternalData = await provider.authorize(token.internal, context)
+        updated = true
+      }
+
+      const preSessionData
+        = config.validate?.(token.data) ?? token.data
+
+      const refinedSession
+        = await toSession(
+          preSessionData as Awaited<Awaited<T>>,
+          (newToken) => {
+            newToken = config.validate?.(newToken) as Awaited<T> ?? newToken
+            updated = true
+          }
+        )
+
+      if (updated) {
+        await sessionStore.set(
+          context.cookie,
+          context.jwt,
+          newToken,
+          token.providerId,
+          newInternalData
+        )
+      }
+
+      return { session: refinedSession, error: null }
+
     }
-
-    const preSessionData
-      = config.validate?.(token.data) ?? token.data
-
-    const refinedSession
-      = await toSession(
-        preSessionData as Awaited<T>,
-        (newToken) => {
-          newToken = config.validate?.(newToken) as Awaited<T> ?? newToken
-          updated = true
-        }
-      )
-
-    if (updated) {
-      await sessionStore.set(
-        context.cookie,
-        context.jwt,
-        newToken,
-        token.providerId,
-        newInternalData
-      )
-    }
-
-    return { session: refinedSession, error: null }
-
-  }
 
   return {
     config,

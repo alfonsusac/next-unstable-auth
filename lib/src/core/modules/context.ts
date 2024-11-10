@@ -10,5 +10,5 @@ export type Context = {
   headers?: Headers,
   request?: Request,
   searchParams?: SearchParams,
-  url?: URL,
+  currentUrl?: URL,
 }

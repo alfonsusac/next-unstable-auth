@@ -1,20 +1,21 @@
-import { auth } from "@/lib/auth";
+import { auth, getSession, signIn } from "@/lib/auth";
 import { PlusSymbol } from "@/ui/plusgrid";
 import { Suspense } from "react";
+import { ClientTest } from "./client";
 
 export default function DemoPage() {
   return (
     <div className="w-full px-4 flex flex-col items-center">
       <Suspense fallback="Loading...">
         <DemoContent />
+        <ClientTest />
       </Suspense>
     </div>
   );
 }
 
 async function DemoContent() {
-  const { session, error } = await auth.getSession();
-  console.log(error);
+  const { session } = await getSession();
   
   return (
     <form className="relative border-zinc-500/20 border-t-transparent border w-full max-w-2xl">
@@ -30,7 +31,7 @@ async function DemoContent() {
         <button
           formAction={async () => {
             "use server";
-            await auth.signIn("google");
+            await signIn("google");
           }}
         >
           Sign In via Google
@@ -47,7 +48,7 @@ async function DemoContent() {
         {session ? (
           <button
             formAction={async () => {
-              "use server";
+              ("use server");
               await auth.signOut();
             }}
           >

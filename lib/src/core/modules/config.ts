@@ -29,12 +29,12 @@ export type ToToken<P extends Provider, T>
 
 export type ToSession<T, S>
   = (
-    data: T,
+    data: Awaited<T>,
     updateToken?: (nT: T) => void
   ) => S
 
 export type ValidateToken<T>
-  = (token: unknown) => Omit<Awaited<T>, "">
+  = (token: unknown) => Omit<T, "">
 
 
 

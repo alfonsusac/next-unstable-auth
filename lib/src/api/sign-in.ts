@@ -28,6 +28,8 @@ export async function signInFlow<P extends InitializedProvider>(
   $: AuthContext
 ) {
 
+  console.log("⭐️ Sign In Flow")
+
   const callbackURI = $.authURL + '/callback/' + provider.id
 
   if (redirectTo) {

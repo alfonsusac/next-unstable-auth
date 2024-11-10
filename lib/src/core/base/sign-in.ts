@@ -1,6 +1,6 @@
 import { DefaultT, ToSession, ToToken, ValidateToken } from "../modules/config"
 import { Context } from "../modules/context"
-import { DefaultUser, defaultUser, Provider, ProviderCredentialValues, Providers } from "../modules/providers"
+import { DefaultUser, defaultUser, Provider, Providers } from "../modules/providers"
 import { Session } from "../modules/session"
 
 export async function signIn<
@@ -8,18 +8,17 @@ export async function signIn<
   T = DefaultT<Providers>,
   S = Awaited<T>,
 >(
-  provider: P,
   $: {
     // Core provider and authentication details
+    provider: P,
     providerId: string,
     credentials: P['fields'] extends () => infer F ? F : undefined,
 
     // Options for customization
-    options: {
-      redirectTo?: string,
-    },
+    redirectTo?: `/${ string }`,
+    callbackPath: `/${ string }`,
 
-    // Context for the request (e.g., URL, redirection handling)
+    // Request Context
     context: Context,
 
     // Session Management
@@ -27,18 +26,19 @@ export async function signIn<
 
     // Optional transformations
     toToken?: ToToken<P, T>,
-    toSession?: ToSession<Awaited<T>, S>,
-    validateToken?: ValidateToken<T>,
+    toSession?: ToSession<T, S>,
+    validate?: ValidateToken<T>,
   }
 ) {
+  const callbackURI = $.context?.currentUrl?.origin + $.callbackPath
 
   const { data, internal }
-    = await provider.authenticate(
+    = await $.provider.authenticate(
       $.credentials,
       {
         ...$.context,
-        callbackURI: $.context.url?.toString() ?? '/',
-        redirectTo: $.options.redirectTo ?? $.context.url?.toString() ?? '/',
+        callbackURI,
+        redirectTo: $.redirectTo ?? $.context?.currentUrl?.toString() ?? '/',
       }
     )
 
@@ -47,147 +47,51 @@ export async function signIn<
     ?? (
       data => {
         if (defaultUser in data == false)
-          throw new Error('Default User is missing in this provider, either provide a toToken() function or add a default user to the data. ProviderID: ' + $.providerId)
+          throw new Error('Default User is missing in this provider, either provide a toToken() function or add a default user to the data.')
 
-        return {
-          token: data[defaultUser],
-          validate: (token: unknown) => {
-
-            if (typeof token !== 'object' || !token)
-              throw new Error('Default User is not an object or is missing')
-
-
-            if (!('id' in token && typeof token.id === 'string'))
-              throw new Error('Default User ID is missing')
-
-            if (typeof token.id !== 'string')
-              throw new Error('Default User ID is not a string')
-
-            if ('name' in token && token.id && typeof token.name !== 'string')
-              throw new Error('Default User Name is not a string')
-
-            if ('email' in token && typeof token.email !== 'string')
-              throw new Error('Default User Email is not a string')
-
-            if ('image' in token && typeof token.image !== 'string')
-              throw new Error('Default User Image is not a string')
-
-            return token as DefaultUser
-          }
-        }
+        return data[defaultUser] as T
       }
     )
-  
 
-  // const toToken
-  //   = $.toToken ??
-  //   ((data) => defaultUser in data ? data[defaultUser] : data)
+  const validate
+    = $.validate
+    ?? (
+      token => {
+        if (typeof token !== 'object' || !token)
+          throw new Error('Default User is not an object or is missing')
 
-  // const token
-  //   = $.toToken
-  //     ? $.validateToken?.(await $.toToken(data)) ?? await $.toToken(data)
-  //     : ((data: unknown) => {
-  //       if (!data)
-  //         throw new Error('Authenticate Data/Token is missing')
-  //       if (typeof data !== 'object')
-  //         throw new Error('Authenticate Data/Token is not an object')
-  //       if (defaultUser in data === false)
-  //         return null
+        if (!('id' in token && typeof token.id === 'string'))
+          throw new Error('Default User ID is missing')
 
-  //       const token = data[defaultUser]
+        if (typeof token.id !== 'string')
+          throw new Error('Default User ID is not a string')
 
-  //       if (typeof token !== 'object' || !token)
-  //         throw new Error('Default User is not an object or is missing')
+        if ('name' in token && token.id && typeof token.name !== 'string')
+          throw new Error('Default User Name is not a string')
 
+        if ('email' in token && typeof token.email !== 'string')
+          throw new Error('Default User Email is not a string')
 
-  //       if (!('id' in token && typeof token.id === 'string'))
-  //         throw new Error('Default User ID is missing')
+        if ('image' in token && typeof token.image !== 'string')
+          throw new Error('Default User Image is not a string')
 
-  //       token
+        return token as DefaultUser
+      }
+    )
 
-  //       if (typeof token.id !== 'string')
-  //         throw new Error('Default User ID is not a string')
+  const token
+    = validate(await toToken(data)) as Awaited<T>
 
-  //       if ('name' in token && token.id && typeof token.name !== 'string')
-  //         throw new Error('Default User Name is not a string')
+  await $.sessionStore?.set(
+    $.context.cookie,
+    $.context.jwt,
+    token,
+    $.providerId,
+    internal
+  )
 
-  //       if ('email' in token && typeof token.email !== 'string')
-  //         throw new Error('Default User Email is not a string')
+  if ($.redirectTo)
+    $.context.redirect($.redirectTo)
 
-  //       if ('image' in token && typeof token.image !== 'string')
-  //         throw new Error('Default User Image is not a string')
-
-  //       return token as DefaultUser
-  //     })(data)
-
-
-
-  // const token
-  //   = $.toToken
-  //     ? $.validateToken?.(await $.toToken(data)) ?? await $.toToken(data)
-  //     : data as Awaited<T>
-
-  // const token
-  //   = await (async () => {
-  //     if ($.toToken) {
-  //       const token = await $.toToken(data)
-  //       return $.validateToken?.(token) ?? token
-  //     } 
-  //     // validate defaultUser
-
-
-  //   })()
-
-
-  // await $.sessionStore?.set(
-  //   $.context.cookie,
-  //   $.context.jwt,
-  //   token,
-  //   $.providerId,
-  //   internal
-  // )
-
-  // if ($.options.redirectTo)
-  //   $.context.redirect($.options.redirectTo)
-
-  // const e = await $.toSession?.(token)
-
-  // return await $.toSession?.(token) ?? token
+  return await $.toSession?.(token) ?? token
 }
-
-type X<P extends Provider,
-  T = Awaited<ReturnType<P['authenticate']>>['data'],
-  S = T,> = ReturnType<typeof signIn<P, T, S>>
-
-
-
-const e = signIn(
-  Provider({
-    // fields: () => {
-    //   return {
-    //     email: 'text',
-    //     password: 'text'
-    //   }
-    // },
-    authenticate:
-      async () => (
-        {
-          data: {
-            name: "John Doe",
-          }, internal: { test: 123 }
-        }
-      ),
-    authorize:
-      async (data: { test: number }) => (
-        { update: false }
-      ),
-  }),
-  {
-    // provider: ,
-    providerId: 'p1',
-    credentials: undefined,
-    options: {
-      redirectTo: '/a',
-    },
-    context: {} as Context,
-  })
