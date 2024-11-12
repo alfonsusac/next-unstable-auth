@@ -1,7 +1,9 @@
+import { InvalidParameterError, ValidationError } from "../../util/error"
 import { DefaultT, ToSession, ToToken, ValidateToken } from "../modules/config"
 import { Context } from "../modules/context"
 import { DefaultUser, defaultUser, Provider, Providers } from "../modules/providers"
-import { Session } from "../modules/session"
+import { SessionStore } from "../modules/session"
+import { defaultValidateToken } from "./validate-token"
 
 export async function signIn<
   P extends Provider,
@@ -9,25 +11,21 @@ export async function signIn<
   S = Awaited<T>,
 >(
   $: {
-    // Core provider and authentication details
     provider: P,
     providerId: string,
     credentials: P['fields'] extends () => infer F ? F : undefined,
-
-    // Options for customization
-    redirectTo?: `/${ string }`,
     callbackPath: `/${ string }`,
 
-    // Request Context
+    redirectTo?: `/${ string }`,
+
     context: Context,
 
-    // Session Management
-    sessionStore?: Session<Providers, T>,
+    sessionStore?: SessionStore<Providers, T>,
 
-    // Optional transformations
-    toToken?: ToToken<P, T>,
-    toSession?: ToSession<T, S>,
-    validate?: ValidateToken<T>,
+    toToken: ToToken<P, T> | undefined,
+    validate: ValidateToken<T> | undefined,
+
+    toSession: ToSession<T, S> | undefined,
   }
 ) {
   const callbackURI = $.context?.currentUrl?.origin + $.callbackPath
@@ -47,37 +45,13 @@ export async function signIn<
     ?? (
       data => {
         if (defaultUser in data == false)
-          throw new Error('Default User is missing in this provider, either provide a toToken() function or add a default user to the data.')
-
+          throw new MissingDefaultUserError()
         return data[defaultUser] as T
       }
     )
 
   const validate
-    = $.validate
-    ?? (
-      token => {
-        if (typeof token !== 'object' || !token)
-          throw new Error('Default User is not an object or is missing')
-
-        if (!('id' in token && typeof token.id === 'string'))
-          throw new Error('Default User ID is missing')
-
-        if (typeof token.id !== 'string')
-          throw new Error('Default User ID is not a string')
-
-        if ('name' in token && token.id && typeof token.name !== 'string')
-          throw new Error('Default User Name is not a string')
-
-        if ('email' in token && typeof token.email !== 'string')
-          throw new Error('Default User Email is not a string')
-
-        if ('image' in token && typeof token.image !== 'string')
-          throw new Error('Default User Image is not a string')
-
-        return token as DefaultUser
-      }
-    )
+    = $.validate ?? defaultValidateToken
 
   const token
     = validate(await toToken(data)) as Awaited<T>
@@ -94,4 +68,11 @@ export async function signIn<
     $.context.redirect($.redirectTo)
 
   return await $.toSession?.(token) ?? token
+}
+
+
+export class MissingDefaultUserError extends InvalidParameterError {
+  constructor() {
+    super('Default User is missing in this provider, either provide a toToken() function or add a [defaultUser] to the data returned from the provider.')
+  }
 }

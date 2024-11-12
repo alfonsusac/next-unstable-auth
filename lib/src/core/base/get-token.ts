@@ -1,10 +1,10 @@
 import { Cookie } from "../modules/cookie"
 import { JWT } from "../modules/jwt"
 import { Provider, Providers } from "../modules/providers"
-import { InternalSession, Session } from "../modules/session"
+import { InternalSession, SessionStore } from "../modules/session"
 
 export async function getSession<T>(
-  sessionStore: Session<Providers, T>,
+  sessionStore: SessionStore<Providers, T>,
   cookie: Cookie,
   jwt: JWT,
 ) {

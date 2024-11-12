@@ -11,3 +11,10 @@ export class InvalidParameterError extends Error {
     this.name = 'InvalidParameterError'
   }
 }
+
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ValidationError'
+  }
+}

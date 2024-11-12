@@ -11,28 +11,32 @@ export type Config<
     secret: string,
     baseAuthURL?: string,
     providers: P,
-    session: {
-      cookieName: string,
-      issuer: string,
+    session?: {
+      cookieName?: string,
+      issuer?: string,
     }
     /** Expiry in seconds */
     expiry?: number,
     toToken?: ToToken<P[keyof P], T>,
-    toSession?: ToSession<Awaited<T>, S>,
+    toSession?: ToSession<T, S>,
     validate?: ValidateToken<T>,
   }
 
-export type ToToken<P extends Provider, T>
+export type ToToken
+  <P extends Provider, T>
   = (
     data: Awaited<Promise<ReturnType<P['authenticate']>>>['data'],
   ) => T | Promise<T>
 
-export type ToSession<T, S>
+
+export type ToSession
+  <T, S>
   = (
     data: Awaited<T>,
-    updateToken?: (nT: T) => void
+    updateToken?: (nT: Awaited<T>) => void
   ) => S
 
+  
 export type ValidateToken<T>
   = (token: unknown) => Omit<T, "">
 

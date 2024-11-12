@@ -1,6 +1,7 @@
 import { Google, NextJWTAuth } from "nextjwtauth"
 
 export const auth = NextJWTAuth({
+  secret: process.env.AUTH_SECRET!,
   apiRoute: "/api/auth",
   providers: {
     google: Google({

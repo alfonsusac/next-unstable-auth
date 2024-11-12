@@ -1,9 +1,8 @@
 import { DefaultT, ToSession, ValidateToken } from "../modules/config";
 import { Context } from "../modules/context";
-import { Cookie } from "../modules/cookie";
-import { JWT } from "../modules/jwt";
-import { Provider, Providers, validateProviderId } from "../modules/providers";
-import { InternalSession, Session } from "../modules/session";
+import { Providers, validateProviderId } from "../modules/providers";
+import { SessionStore } from "../modules/session";
+import { defaultValidateToken } from "./validate-token";
 
 export async function getSession<
   P extends Providers,
@@ -12,52 +11,66 @@ export async function getSession<
 >(
   providers: P,
   $: {
-    sessionStore: Session<P, T>
-    cookie: Cookie,
-    jwt: JWT,
+    sessionStore: SessionStore<P, T>
     context: Context,
-    validate?: ValidateToken<Awaited<T>>,
-    toSession?: ToSession<T, S>,
+    validate?: ValidateToken<T>,
+    toSession: ToSession<T, S> | undefined,
   }
 ) {
   const { token, expired }
     = await $.sessionStore.get(
-      $.cookie,
-      $.jwt,
+      $.context.cookie,
+      $.context.jwt,
     )
 
   if (!token)
-    return { session: null, error: null }
+    return null
 
   const provider
     = validateProviderId(providers, token.providerId)
 
+  const unvalidatedData
+    = token.data
+
+  const validate
+    = $.validate ?? defaultValidateToken
+
+  const data
+    = validate(unvalidatedData) as Awaited<T>
+
   let updated
     = false
-  let newToken
-    = token.data as Awaited<T>
-  let newInternalData
+  let updatedToken
+    = data
+  let updatedInternalData
     = token.internal
 
   if (expired) {
-    newInternalData
+    updatedInternalData
       = await provider.authorize(token.internal, $.context)
     updated
       = true
   }
 
-  const validatedToken
-    = $.validate?.(token.data) as Awaited<T> ?? token.data
-
-  const toSession
-    = $.toSession ?? ((token) => token as S)
+  const updateToken
+    = (newToken: Awaited<T>) => {
+      updatedToken
+        = newToken
+      updated
+        = true
+    }
 
   const session
-    = await $.toSession?.(
-      validatedToken
+    = await $.toSession?.(data, updateToken) ?? data
+
+  if (updated)
+    await $.sessionStore.set(
+      $.context.cookie,
+      $.context.jwt,
+      $.validate?.(updatedToken) as Awaited<T>,
+      token.providerId,
+      updatedInternalData,
     )
 
-  
-
-
+  return session
 }

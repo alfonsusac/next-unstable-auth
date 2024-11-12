@@ -23,7 +23,7 @@ export type InternalSession<T = unknown, I = unknown> = {
 }
 
 
-export class Session<P extends Providers, T> {
+export class SessionStore<P extends Providers, T> {
   constructor(
     readonly cookieName: string,
     readonly issuer: string,
@@ -57,7 +57,7 @@ export class Session<P extends Providers, T> {
       {
         secure: true,
         httpOnly: true,
-        sameSite: 'Strict',
+        sameSite: 'strict',
       }
     )
   }

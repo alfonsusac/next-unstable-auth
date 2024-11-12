@@ -3,7 +3,7 @@ export type CookieOptions = {
   path?: string,
   domain?: string,
   secure?: boolean,
-  sameSite?: 'Strict' | 'Lax' | 'None',
+  sameSite?: 'strict' | 'lax' | 'none',
   httpOnly?: boolean,
 }
 
