@@ -14,8 +14,6 @@ export default async function Home() {
   } catch (error) {
     console.log("------");
     console.log(String(error).includes("Error: Cookies"));
-
-
   }
 
   return (
@@ -58,6 +56,7 @@ export default async function Home() {
           </div>
         </div>
         <Shell code={"npx nuauth create"} />
+        <small className="text-zinc-500">Package coming soon!</small>
       </div>
       <div className="w-full flex justify-center py-16 border-b border-zinc-500/10">
         <div className="max-w-screen-sm self-center w-full">
