@@ -35,7 +35,7 @@ export default async function Home() {
           className="pb-4"
         />
         <h1 className="text-5xl font-semibold tracking-tight relative">
-          Doobie.js
+          NuAuth
           <div className="absolute right-0 top-0 translate-x-full text-xs bg-blue-500 rounded-full px-1.5 py-0.5">
             WIP
           </div>
@@ -57,7 +57,7 @@ export default async function Home() {
             Flexible
           </div>
         </div>
-        <Shell code={"npm i nextjwtauth"} />
+        <Shell code={"npx nuauth create"} />
       </div>
       <div className="w-full flex justify-center py-16 border-b border-zinc-500/10">
         <div className="max-w-screen-sm self-center w-full">
@@ -130,7 +130,7 @@ export default async function Home() {
       </div>
       <footer className="p-12 flex flex-col border-t border-zinc-500/20">
         <div className="text-center opacity-80">
-          NextJWTAuth © Alfonsus Ardani {new Date().getFullYear()}
+          NuAuth © Alfonsus Ardani {new Date().getFullYear()}
         </div>
       </footer>
     </div>

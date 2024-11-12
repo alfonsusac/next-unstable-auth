@@ -50,7 +50,7 @@ export default function RootLayout({
                     alt=""
                     className="block"
                   />
-                  <div>Doobie.js</div>
+                  <div>NuAuth</div>
                 </a>
               </div>
               <div className="flex gap-6 text-sm items-center">

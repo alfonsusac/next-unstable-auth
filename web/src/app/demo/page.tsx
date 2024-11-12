@@ -1,14 +1,12 @@
 import { auth, getSession, signIn } from "@/lib/auth";
 import { PlusSymbol } from "@/ui/plusgrid";
 import { Suspense } from "react";
-import { ClientTest } from "./client";
 
 export default function DemoPage() {
   return (
     <div className="w-full px-4 flex flex-col items-center">
       <Suspense fallback="Loading...">
         <DemoContent />
-        <ClientTest />
       </Suspense>
     </div>
   );
