@@ -1,5 +1,6 @@
-import { ValidationError } from "../../util/error"
-import { DefaultUser } from "../modules/providers"
+import { DefaultT } from "../modules/config"
+import { ValidationError } from "../modules/error"
+import { defaultUser, DefaultUser, Providers } from "../modules/providers"
 
 export const defaultValidateToken = (token: unknown) => {
   if (typeof token !== 'object' || !token)
@@ -21,4 +22,16 @@ export const defaultValidateToken = (token: unknown) => {
     throw new ValidationError('Default User Image is not a string')
 
   return token as DefaultUser
-} 
+}
+
+export const defaultToToken = <
+  P extends Providers,
+  T = DefaultT<P>
+>
+  (
+    data: Awaited<ReturnType<P[keyof P]["authenticate"]>>["data"]
+  ): T => {
+  if (defaultUser in data == false)
+    throw new ValidationError('Default User is missing')
+  return data[defaultUser] as T
+}

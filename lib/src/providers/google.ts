@@ -3,8 +3,8 @@ import { OneTimeCookieStore } from "../util/cookie"
 import { OAuthProvider } from "./oauth"
 import { decodeIdToken, Google as GoogleArctic } from "arctic"
 import { generateNonce } from "../util/nonce"
-import { InvalidParameterError } from "../util/error"
 import { defaultUserAuthorizeReturn } from "../config"
+import { InvalidParameterError } from "../core/modules/error"
 
 
 export type GoogleOAuthConfig = {

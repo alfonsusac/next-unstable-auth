@@ -1,4 +1,5 @@
-import { Cookie } from "./cookie"
+import { DefaultT, ValidateToken } from "./config"
+import { Cookie, CookieStore } from "./cookie"
 import { JWT, nowInSeconds } from "./jwt"
 import { Providers } from "./providers"
 
@@ -22,28 +23,42 @@ export type InternalSession<T = unknown, I = unknown> = {
   expired: boolean,
 }
 
+export class SessionStore<
+  P extends Providers,
+  T = DefaultT<P>,
+> {
 
-export class SessionStore<P extends Providers, T> {
+  cookieStore: CookieStore
+
   constructor(
     readonly cookieName: string,
     readonly issuer: string,
     readonly expiry: number,
     readonly secret: string,
-  ) { }
+    readonly cookie: Cookie,
+    readonly jwt: JWT,
+  ) {
+    this.cookieStore = new CookieStore(
+      this.cookie,
+      this.cookieName,
+      {
+        secure: true,
+        httpOnly: true,
+        sameSite: 'strict',
+      }
+    )
+  }
 
-  async set(
-    cookie: Cookie,
-    jwt: JWT,
+  set(
     token: Awaited<T>,
-    providerId?: keyof P,
-    internal?: any,
+    providerId: keyof P,
+    internal: any,
   ) {
     if (typeof providerId !== 'string')
       throw Error('Session.set(): invalid providerId')
 
-    cookie.set(
-      this.cookieName,
-      jwt.sign(
+    this.cookieStore.set(
+      this.jwt.sign(
         {
           t: token,
           p: providerId,
@@ -53,25 +68,17 @@ export class SessionStore<P extends Providers, T> {
           iss: this.issuer,
         } satisfies InternalToken,
         this.secret
-      ),
-      {
-        secure: true,
-        httpOnly: true,
-        sameSite: 'strict',
-      }
+      )
     )
+
   }
 
+  get() {
 
-
-  async get(
-    cookie: Cookie,
-    jwt: JWT,
-  ) {
-    const token = cookie.get(this.cookieName)
+    const token = this.cookieStore.get()
     if (!token) return { token: null, expired: null }
 
-    const session = jwt.verify(token, this.secret)
+    const session = this.jwt.verify(token, this.secret)
     if (!session) return { token: null, expired: null }
 
     if (typeof session !== "object")
@@ -100,11 +107,11 @@ export class SessionStore<P extends Providers, T> {
 
 
 
-  async clear(
-    cookie: Cookie,
-  ) {
-    cookie.delete(this.cookieName)
+  clear() {
+
+    this.cookieStore.clear()
     return true
+
   }
 }
 

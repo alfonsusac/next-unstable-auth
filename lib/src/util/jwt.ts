@@ -1,5 +1,4 @@
 import { sign, verify } from 'jsonwebtoken'
-import { InvalidParameterError } from './error'
 
 export const jwt = {
   "create": (payload: unknown, secret: string) => sign(JSON.stringify(payload), secret),

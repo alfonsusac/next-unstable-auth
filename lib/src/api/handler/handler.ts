@@ -5,7 +5,7 @@ import { signInCallbackFlow, signInFlow, SignInParams, validateSignInParameters 
 import { createCSRFFlow } from "../csrf";
 import { getSessionFlow } from "../get-session";
 import { signOutFlow } from "../sign-out";
-import { InvalidConfigError, InvalidParameterError } from "../../util/error";
+import { InvalidConfigError, InvalidParameterError } from "../../core/modules/error";
 
 // Main function to export request handlers
 export function getNextHandlerFunctions(authContext: AuthContext) {

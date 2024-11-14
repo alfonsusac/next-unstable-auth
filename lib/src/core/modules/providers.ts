@@ -1,30 +1,36 @@
-import { Context } from "./context";
 import { CredentialSchema, ToCredentialValues, ToCredentialValues as V } from "./credentials";
+import { RequestContext } from "./request";
 
 export type Provider
   <
-    F = any,
+    C = any,
     D extends DefaultAuthenticateData = any,
     I = any,
   > = {
-    fields?: (input: unknown) => F,
-    authenticate: Authenticate<F, D, I>,
+    fields?: (input: unknown) => C,
+    authenticate: Authenticate<C, D, I>,
     authorize: Authorize<I>,
   }
 
 export type Authenticate
-  <P = any, D = any, I = any>
-  = (
-    param: P,
-    context: Context & {
-      callbackURI: string,
-      redirectTo: string,
-    }
+  <
+    C = any,
+    D = any,
+    I = any
+  > = (
+    $: AuthenticateParameters<C>
   ) =>
     Promise<{
       data: D,
       internal: I
     }>
+
+export type AuthenticateParameters<C> = {
+  credentials: C,
+  callbackURI: string,
+  redirectTo: string | null,
+  requestContext?: RequestContext
+}
 
 export type DefaultAuthenticateData
   = object & { [defaultUser]?: DefaultUser }
@@ -33,7 +39,7 @@ export type Authorize
   <I>
   = (
     internalData: I,
-    context: Context
+    context: RequestContext
   ) =>
     Promise<{
       update: true,
@@ -43,6 +49,14 @@ export type Authorize
     }>
 
 export type Providers = { [key in string]: Provider }
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+
+
 
 
 
@@ -71,10 +85,79 @@ export type DefaultUser
 
 
 
+export class ProviderHandler<
+  P extends Providers,
+  ID extends keyof P,
+> {
+
+  provider: P[ID]
+
+  constructor(
+    providers: P,
+    readonly id: ID,
+    readonly callbackURI: string,
+  ) {
+    this.provider = validateProviderId(providers, id)
+  }
+
+  authenticate
+    = async (
+      {
+        redirectTo,
+        requestContext,
+        credentials
+      }: Omit<AuthenticateParameters<any>, "callbackURI">
+    ) => {
+      const validatedParam
+        = this.provider.fields?.(credentials) ?? undefined
+
+      return await this.provider.authenticate({
+        credentials: validatedParam,
+        redirectTo,
+        requestContext,
+        callbackURI: this.callbackURI,
+      })
+    }
+
+
+  authorize
+    = async (
+      internal: any,
+      context: RequestContext
+    ) =>
+      await this.provider.authorize(internal, context)
+
+  $fields
+    = undefined as P[ID]['fields']
+
+  $fieldValues
+    = undefined as P[ID] extends Provider<infer X> ? X : undefined
+}
+
+
 export type InitializedProvider<
   P extends Provider = Provider,
-  ID extends string | number = string | number
-> = P & { id: ID }
+> = P
+  & {
+    id: string,
+    callbackURI: string
+    authorize: Parameters<P['authorize']>
+  }
+
+export type InitializedAuthenticate
+  <P = any, D = any, I = any>
+  = (
+    $: {
+      param: P,
+      callbackURI: string,
+      redirectTo?: string,
+      requestContext?: RequestContext
+    }
+  ) =>
+    Promise<{
+      data: D,
+      internal: I
+    }>
 
 
 
@@ -82,7 +165,11 @@ export type InitializedProvider<
 
 
 
-export function Provider<P extends Provider>(provider: P) {
+export function Provider<
+  C = any,
+  D extends DefaultAuthenticateData = any,
+  I = any,
+>(provider: Provider<C, D, I>) {
   return provider
 }
 
@@ -99,7 +186,7 @@ export function initializeProviders<
     )
   )
 
-  return entries as { [key in Exclude<keyof P, symbol>]: InitializedProvider<P[key], key> }
+  return entries as { [key in Exclude<keyof P, symbol>]: InitializedProvider<P[key]> }
 }
 
 
@@ -108,10 +195,15 @@ export function validateProviderId<
   P extends Providers,
   ID extends keyof P
 >(providers: P, id: ID) {
-  if (!(id in providers)) {
+  if (!(id in providers))
     throw new Error(`Invalid provider ID: ${ String(id) }`)
-  }
-  return providers[id]
+
+  const provider = providers[id]
+
+  if (!provider)
+    throw new Error(`Provider ${ String(id) } not found`)
+
+  return provider
 }
 
 

@@ -1,18 +1,7 @@
-import { DefaultT } from "../modules/config";
-import { Context } from "../modules/context";
-import { Providers } from "../modules/providers";
-import { SessionStore } from "../modules/session";
+import { AuthContext } from "../init";
 
-export async function signOut<
-  P extends Providers,
-  T = DefaultT<P>,
->(
-  $: {
-    sessionStore: SessionStore<P, T>
-    context: Context,
-  }
+export async function signOut(
+  $: AuthContext<any, any, any>
 ) {
-  await $.sessionStore.clear(
-    $.context.cookie,
-  )
+  $.sessionStore.clear()
 }

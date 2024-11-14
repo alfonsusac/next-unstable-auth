@@ -1,10 +1,10 @@
 import { headers } from "next/headers"
 import { Config, defaultUserAuthorizeReturn, GetDefaultJ } from "./config"
 import { CookieStore, OneTimeCookieStore } from "./util/cookie"
-import { InvalidConfigError, InvalidParameterError } from "./util/error"
 import { redirect as next_redirect } from "next/navigation"
 import { InitializedProvider, Provider, Providers } from "./providers"
 import { createSessionStore, SessionStore } from "./api/session"
+import { InvalidConfigError, InvalidParameterError } from "./core/modules/error"
 
 export type AuthUtils<
   P extends Providers = Providers,

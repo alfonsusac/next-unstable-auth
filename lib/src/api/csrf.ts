@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { OneTimeCookieStore } from "../util/cookie";
-import { InvalidParameterError } from "../util/error";
+import { InvalidParameterError } from "../core/modules/error";
 
 export async function checkCSRFFlow($: { csrfStore: OneTimeCookieStore }) {
   const header = await headers()

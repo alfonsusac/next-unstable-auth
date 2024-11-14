@@ -1,6 +1,6 @@
+import { InvalidParameterError } from "../core/modules/error";
 import { AuthContext } from "../init";
 import { Providers } from "../providers";
-import { InvalidParameterError } from "../util/error";
 
 export async function getSessionFlow<
   P extends Providers,

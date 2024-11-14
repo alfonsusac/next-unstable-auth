@@ -1,8 +1,6 @@
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
-export async function GET() {
-
+export async function GetHeaders() {
   const header = await headers();
   console.log(Object.fromEntries(header.entries()));
   console.log({
@@ -13,5 +11,5 @@ export async function GET() {
     host: header.get("host"),
   });
 
-  redirect('/test')
+  return <div>Hello World</div>;
 }

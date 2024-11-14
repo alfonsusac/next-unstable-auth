@@ -1,42 +1,30 @@
+import { AuthContext } from "../init";
 import { DefaultT, ToSession, ValidateToken } from "../modules/config";
-import { Context } from "../modules/context";
 import { Providers, validateProviderId } from "../modules/providers";
+import { RequestContext } from "../modules/request";
 import { SessionStore } from "../modules/session";
-import { defaultValidateToken } from "./validate-token";
+import { defaultValidateToken } from "./default-callbacks";
 
 export async function getSession<
   P extends Providers,
   T = DefaultT<P>,
   S = Awaited<T>,
 >(
-  providers: P,
-  $: {
-    sessionStore: SessionStore<P, T>
-    context: Context,
-    validate?: ValidateToken<T>,
-    toSession: ToSession<T, S> | undefined,
-  }
+  $: AuthContext<P, T, S>,
+  $$: RequestContext,
 ) {
+
   const { token, expired }
-    = await $.sessionStore.get(
-      $.context.cookie,
-      $.context.jwt,
-    )
+    = $.sessionStore.get()
 
   if (!token)
     return null
 
   const provider
-    = validateProviderId(providers, token.providerId)
-
-  const unvalidatedData
-    = token.data
-
-  const validate
-    = $.validate ?? defaultValidateToken
+    = $.getProvider(token.providerId)
 
   const data
-    = validate(unvalidatedData) as Awaited<T>
+    = $.validate(token.data) as Awaited<T>
 
   let updated
     = false
@@ -47,7 +35,7 @@ export async function getSession<
 
   if (expired) {
     updatedInternalData
-      = await provider.authorize(token.internal, $.context)
+      = await provider.authorize(token.internal, $$)
     updated
       = true
   }
@@ -61,12 +49,10 @@ export async function getSession<
     }
 
   const session
-    = await $.toSession?.(data, updateToken) ?? data
+    = await $.toSession(data, updateToken) ?? data
 
   if (updated)
     await $.sessionStore.set(
-      $.context.cookie,
-      $.context.jwt,
       $.validate?.(updatedToken) as Awaited<T>,
       token.providerId,
       updatedInternalData,

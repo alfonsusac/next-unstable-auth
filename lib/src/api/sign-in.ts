@@ -1,6 +1,6 @@
+import { InvalidParameterError } from "../core/modules/error"
 import { AuthContext } from "../init"
 import { CredSchema, CredValues, InitializedProvider, Provider, ProviderCredentialValues, Providers } from "../providers"
-import { InvalidParameterError } from "../util/error"
 import { RouteHandlerContext } from "./handler/context"
 
 
@@ -96,10 +96,6 @@ export type SignInParams<
   [
     id: ID,
     ...P[ID]['fields'] extends infer C ? CredSchema extends C ? [] : [creds: C extends CredSchema ? CredValues<C> : never] : [],
-    // ...P[ID]['fields'] extends infer C ?
-    // CredSchema extends C ? []
-    // : C extends CredSchema ? [credentials: CredValues<C>] : []
-    // : [],
     options?: SignInOptions
   ]
 

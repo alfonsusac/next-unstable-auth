@@ -2,12 +2,17 @@ import { describe, expect, expectTypeOf, test } from "vitest"
 import { validateCredentialValues } from "./modules/credentials"
 import { AuthCore } from "."
 import { DefaultUser, defaultUser, Provider } from "./modules/providers"
-import { CookieStore } from "./modules/cookie"
+import { CookieOptions, CookieStore } from "./modules/cookie"
 
 
 const playground = AuthCore({
+  hostAuthPathURL: "https://www.acme.com/auth",
   providers: {
     p1: Provider({
+      fields: () => ({
+        email: { type: 'text' },
+        password: { type: 'text' }
+      }),
       authenticate:
         async () => (
           {
@@ -43,21 +48,36 @@ const playground = AuthCore({
     cookieName: "a",
     issuer: "b",
   },
-  // toToken: async (data) => {
-  //   return {
-  //     yes: ""
-  //   }
-  // },
-  // validate: (data) => {
-  //   return {
-  //     yes: "John Doe"
-  //   }
-  // },
-  // toSession: async (data) => {
-  //   return {
-  //     test: 'wordl'
-  //   }
-  // }
+  jwt: {
+    sign: function (payload: any, secret: string): string {
+      throw new Error("Function not implemented.")
+    },
+    verify: function (token: string, secret: string): unknown {
+      throw new Error("Function not implemented.")
+    }
+  },
+  cookie: {
+    get: function (name: string): string | null {
+      throw new Error("Function not implemented.")
+    },
+    set: function (name: string, value: string, options?: CookieOptions): void {
+      throw new Error("Function not implemented.")
+    },
+    delete: function (name: string): void {
+      throw new Error("Function not implemented.")
+    }
+  },
+  header: {
+    get: function (name: string): string | null {
+      throw new Error("Function not implemented.")
+    },
+    set: function (name: string, value: string): void {
+      throw new Error("Function not implemented.")
+    }
+  },
+  redirect: function (url: string): never {
+    throw new Error("Function not implemented.")
+  }
 })
 
 const token = playground.$Infer.Session
@@ -92,22 +112,22 @@ describe('core config', () => {
       delete: (key: string) => delete emulatedCookieStorage[key]
     }
 
-    const store = new CookieStore("ns-auth", {})
+    const store = new CookieStore(cookie, "ns-auth", {})
 
-    store.set(cookie, "123")
+    store.set("123")
 
     expect(emulatedCookieStorage["ns-auth"]).toEqual("123")
-    expect(store.get(cookie)).toEqual("123")
+    expect(store.get()).toEqual("123")
 
-    store.set(cookie, "456")
+    store.set("456")
 
     expect(emulatedCookieStorage["ns-auth"]).toEqual("456")
-    expect(store.get(cookie)).toEqual("456")
+    expect(store.get()).toEqual("456")
 
-    store.clear(cookie)
+    store.clear()
 
     expect(emulatedCookieStorage["ns-auth"]).toBeUndefined()
-    expect(store.get(cookie)).toBeUndefined()
+    expect(store.get()).toBeUndefined()
 
   })
 
@@ -115,14 +135,22 @@ describe('core config', () => {
 
   test('with toToken and toSession', async () => {
     const provider = Provider({
-      authenticate: async (param: { email: string, password: string }) => ({ data: { name: "John Doe" }, internal: { test: 123 } }),
-      authorize: async (data: { test: number }) => ({ update: false }),
+      fields: () => ({
+        email: "",
+        password: "",
+      }),
+      authenticate: async ($) => ({ data: { name: "John Doe" }, internal: { test: 123 } }),
+      authorize: async ($) => ({ update: false }),
     })
 
-    expectTypeOf(provider).toMatchTypeOf<{
-      authenticate: (param: { email: string, password: string }) => Promise<{ data: { name: string; }; internal: { test: number; }; }>,
-      authorize: (data: { test: number }) => Promise<{ update: boolean; }>
-    }>()
+    expectTypeOf(provider).toMatchTypeOf<Provider<{
+      email: string;
+      password: string;
+    }, {
+      name: string;
+    }, {
+      test: number;
+    }>>()
 
     const auth = AuthCore({
       session: {
@@ -136,6 +164,37 @@ describe('core config', () => {
           authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: "5", name: "1", email: "2", image: "3" } }, internal: { lorem: "456" } }),
           authorize: async () => ({ update: false }),
         })
+      },
+      hostAuthPathURL: "",
+      jwt: {
+        sign: function (payload: any, secret: string): string {
+          throw new Error("Function not implemented.")
+        },
+        verify: function (token: string, secret: string): unknown {
+          throw new Error("Function not implemented.")
+        }
+      },
+      cookie: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string, options?: CookieOptions): void {
+          throw new Error("Function not implemented.")
+        },
+        delete: function (name: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      header: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      redirect: function (url: string): never {
+        throw new Error("Function not implemented.")
       },
       toToken: (p) => {
 
@@ -187,14 +246,49 @@ describe('core config', () => {
           authorize: async () => ({ update: false }),
         }),
         p3: Provider({
-          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: 1 } }, internal: { lorem: "456" } }),
+          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: "1" } }, internal: { lorem: "456" } }),
           authorize: async () => ({ update: false }),
         })
+      },
+      hostAuthPathURL: "",
+      jwt: {
+        sign: function (payload: any, secret: string): string {
+          throw new Error("Function not implemented.")
+        },
+        verify: function (token: string, secret: string): unknown {
+          throw new Error("Function not implemented.")
+        }
+      },
+      cookie: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string, options?: CookieOptions): void {
+          throw new Error("Function not implemented.")
+        },
+        delete: function (name: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      header: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      redirect: function (url: string): never {
+        throw new Error("Function not implemented.")
       }
     })
 
-    expectTypeOf(auth.$Infer.Token).toEqualTypeOf<DefaultUser>()
-    expectTypeOf(auth.$Infer.Session).toEqualTypeOf<DefaultUser>()
+    expectTypeOf(auth.$Infer.Token).toEqualTypeOf<{
+      name: string;
+    } | DefaultUser>()
+    expectTypeOf(auth.$Infer.Session).toEqualTypeOf<{
+      name: string;
+    } | DefaultUser>()
   })
 
 
@@ -216,7 +310,7 @@ describe('core config', () => {
           authorize: async () => ({ update: false }),
         }),
         p3: Provider({
-          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: 1 } }, internal: { lorem: "456" } }),
+          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: "1" } }, internal: { lorem: "456" } }),
           authorize: async () => ({ update: false }),
         })
       },
@@ -234,12 +328,43 @@ describe('core config', () => {
         } | {
           age: number;
           [defaultUser]: {
-            id: number;
+            id: string;
           };
         }>()
         return {
           yes: ""
         }
+      },
+      hostAuthPathURL: "",
+      jwt: {
+        sign: function (payload: any, secret: string): string {
+          throw new Error("Function not implemented.")
+        },
+        verify: function (token: string, secret: string): unknown {
+          throw new Error("Function not implemented.")
+        }
+      },
+      cookie: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string, options?: CookieOptions): void {
+          throw new Error("Function not implemented.")
+        },
+        delete: function (name: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      header: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      redirect: function (url: string): never {
+        throw new Error("Function not implemented.")
       }
     })
     expectTypeOf(auth.$Infer.Token).toEqualTypeOf<{ yes: string; }>()
@@ -265,18 +390,53 @@ describe('core config', () => {
           authorize: async () => ({ update: false }),
         }),
         p3: Provider({
-          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: 1 } }, internal: { lorem: "456" } }),
+          authenticate: async () => ({ data: { age: 4, [defaultUser]: { id: "1" } }, internal: { lorem: "456" } }),
           authorize: async () => ({ update: false }),
         })
       },
       toSession: (p) => {
-        expectTypeOf(p).toEqualTypeOf<DefaultUser>()
+        expectTypeOf(p).toEqualTypeOf<DefaultUser | {
+          name: string;
+        }>()
         return {
           hello: ""
         }
+      },
+      hostAuthPathURL: "",
+      jwt: {
+        sign: function (payload: any, secret: string): string {
+          throw new Error("Function not implemented.")
+        },
+        verify: function (token: string, secret: string): unknown {
+          throw new Error("Function not implemented.")
+        }
+      },
+      cookie: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string, options?: CookieOptions): void {
+          throw new Error("Function not implemented.")
+        },
+        delete: function (name: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      header: {
+        get: function (name: string): string | null {
+          throw new Error("Function not implemented.")
+        },
+        set: function (name: string, value: string): void {
+          throw new Error("Function not implemented.")
+        }
+      },
+      redirect: function (url: string): never {
+        throw new Error("Function not implemented.")
       }
     })
-    expectTypeOf(auth.$Infer.Token).toEqualTypeOf<DefaultUser>()
+    expectTypeOf(auth.$Infer.Token).toEqualTypeOf<DefaultUser | {
+      name: string;
+    }>()
     expectTypeOf(auth.$Infer.Session).toEqualTypeOf<{ hello: string; }>()
   })
 })
