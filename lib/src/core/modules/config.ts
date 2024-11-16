@@ -1,6 +1,7 @@
 import { Cookie, Header } from "./cookie";
 import { JWT } from "./jwt";
 import { Authenticate, DefaultUser, defaultUser, Provider, Providers } from "./providers";
+import { Redirect } from "./redirect";
 
 
 
@@ -11,22 +12,27 @@ export type Config<
 >
   = {
     secret: string,
-    hostAuthPathURL: string,
+    authPath: `/${ string }`,
     providers: P,
+
+    /** Expiry in seconds */
+    expiry: number,
+    toToken?: ToToken<P[keyof P], T>,
+    toSession?: ToSession<T, S>,
+    validate?: ValidateToken<T>,
+
+    jwt: JWT,
+    cookie: Cookie,
+    header: Header,
+    redirect: Redirect,
+
+    request?: Pick<Request, "url" | "method" | "json">
     session?: {
       cookieName?: string,
       issuer?: string,
     }
-    /** Expiry in seconds */
-    expiry?: number,
-    toToken?: ToToken<P[keyof P], T>,
-    toSession?: ToSession<T, S>,
-    validate?: ValidateToken<T>,
-    jwt: JWT,
-    cookie: Cookie,
-    header: Header,
-    redirect: (url: string) => never,
   }
+
 
 export type ToToken
   <P extends Provider, T>
@@ -46,16 +52,14 @@ export type ToSession
 export type ValidateToken<T>
   = (token: unknown) => NoInfer<T>
 
-
-
 export type DefaultT<P extends Providers | Provider>
   =
   P extends Providers ?
-    DefaultT<P[keyof P]> : P['authenticate'] extends infer T ?
-      T extends Authenticate<infer _, infer D> ?
-        D extends { [defaultUser]: DefaultUser } ?
-          DefaultUser
-        : D
-      : never // not authenticate - impossible
-    : never // P['authenticate'] somehow doesn't exist - impossible
+  DefaultT<P[keyof P]> : P['authenticate'] extends infer T ?
+  T extends Authenticate<infer _, infer D> ?
+  D extends { [defaultUser]: DefaultUser } ?
+  DefaultUser
+  : D
+  : never // not authenticate - impossible
+  : never // P['authenticate'] somehow doesn't exist - impossible
 

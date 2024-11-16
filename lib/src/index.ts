@@ -4,4 +4,6 @@
  */
 export { NextJWTAuth } from "./nextjwtauth" 
 
+export { NuAuth } from "./next" 
+
 export { Google } from "./providers/google"

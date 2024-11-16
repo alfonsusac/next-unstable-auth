@@ -5,7 +5,7 @@ import { signInCallbackFlow, signInFlow, SignInParams, validateSignInParameters 
 import { createCSRFFlow } from "../csrf";
 import { getSessionFlow } from "../get-session";
 import { signOutFlow } from "../sign-out";
-import { InvalidConfigError, InvalidParameterError } from "../../core/modules/error";
+import { ConfigError, InvalidParameterError } from "../../core/modules/error";
 
 // Main function to export request handlers
 export function getNextHandlerFunctions(authContext: AuthContext) {
@@ -18,7 +18,7 @@ export function getNextHandlerFunctions(authContext: AuthContext) {
     console.error(error)
     if (error instanceof InvalidParameterError) return Response.json({ error: 'Invalid Request' }, { status: 400 })
     if (error instanceof SyntaxError) return Response.json({ error: 'Invalid Request' }, { status: 400 })
-    if (error instanceof InvalidConfigError) return Response.json({ error: 'Invalid Configuration' }, { status: 500 })
+    if (error instanceof ConfigError) return Response.json({ error: 'Invalid Configuration' }, { status: 500 })
     if (error instanceof Error) return Response.json({ error: `[${ error.name }]: ${ error.message }` }, { status: 500 })
     return Response.json({ error }, { status: 500 })
   }

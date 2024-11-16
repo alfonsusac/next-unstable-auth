@@ -1,7 +1,6 @@
 import { AuthContext } from "../init";
 import { DefaultT } from "../modules/config";
-import { Provider, Providers } from "../modules/providers";
-import { RequestContext } from "../modules/request";
+import { Providers } from "../modules/providers";
 
 export async function callback<
   P extends Providers,
@@ -9,10 +8,9 @@ export async function callback<
   S = Awaited<T>,
 >(
   $: AuthContext<P, T, S>,
-  $r: RequestContext,
 ) {
   const provider
-    = $.getProvider($r.segments[1])
+    = $.getProvider($.requestContext.segments()[1])
 
   const redirectTo
     = $.redirectStore.use()
@@ -21,7 +19,7 @@ export async function callback<
     = await provider.authenticate({
       credentials: undefined,
       redirectTo,
-      requestContext: $r,
+      requestContext: $.requestContext,
     })
 
   const rtoken

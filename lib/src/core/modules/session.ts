@@ -1,5 +1,5 @@
 import { DefaultT, ValidateToken } from "./config"
-import { Cookie, CookieStore } from "./cookie"
+import { Cookie, CookieOptions, CookieStore } from "./cookie"
 import { JWT, nowInSeconds } from "./jwt"
 import { Providers } from "./providers"
 
@@ -23,7 +23,17 @@ export type InternalSession<T = unknown, I = unknown> = {
   expired: boolean,
 }
 
-export class SessionStore<
+
+
+export const sessionCookieOption: CookieOptions = {
+  secure: true,
+  httpOnly: true,
+  sameSite: 'strict',
+} as const
+
+
+
+export class SessionHandler<
   P extends Providers,
   T = DefaultT<P>,
 > {
@@ -41,11 +51,7 @@ export class SessionStore<
     this.cookieStore = new CookieStore(
       this.cookie,
       this.cookieName,
-      {
-        secure: true,
-        httpOnly: true,
-        sameSite: 'strict',
-      }
+      sessionCookieOption
     )
   }
 
@@ -70,7 +76,6 @@ export class SessionStore<
         this.secret
       )
     )
-
   }
 
   get() {
@@ -79,8 +84,8 @@ export class SessionStore<
     if (!token) return { token: null, expired: null }
 
     const session = this.jwt.verify(token, this.secret)
-    if (!session) return { token: null, expired: null }
-
+    if (!session)
+      throw new InvalidSession("Invalid session")
     if (typeof session !== "object")
       throw new InvalidSession("Invalid session")
     if ("t" in session === false || "i" in session === false || "p" in session === false || "e" in session === false || "iat" in session === false || "iss" in session === false)
@@ -89,7 +94,7 @@ export class SessionStore<
       throw new InvalidSession("Invalid issuer")
     if (typeof session.e !== "number")
       throw new InvalidSession("Invalid expiry")
-    if (typeof session.iat !== "number")
+    if (typeof session.iat !== "number" || session.iat > nowInSeconds() || session.iat > session.e)
       throw new InvalidSession("Invalid issuedAt")
     if (typeof session.p !== "string")
       throw new InvalidSession("Invalid providerId")
@@ -103,6 +108,7 @@ export class SessionStore<
       },
       expired: session.e < nowInSeconds(),
     } as InternalSession<Awaited<T>>
+    
   }
 
 
@@ -116,7 +122,7 @@ export class SessionStore<
 }
 
 
-class InvalidSession extends Error {
+export class InvalidSession extends Error {
   constructor(msg: string) {
     super("Session.get(): Invalid token: " + msg)
   }

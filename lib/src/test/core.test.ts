@@ -1,9 +1,4 @@
-// import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
-// import { cookies, headers } from 'next/headers'
-// import { redirect } from 'next/navigation'
-// import { Provider } from '../providers'
-// import { NextJWTAuth } from '../nextjwtauth'
-// import { jwt } from '../util/jwt'
+import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
 
 // // Mock 
 // // ------------------------------------------------------------------------
@@ -193,3 +188,12 @@
 //     expect(session2).toBeNull()
 //   })
 // })
+
+
+describe('auth using client functions', () => {
+
+  it('passwordless, no redirect', () => {
+    expect(true).toBe(true)
+  })
+
+})

@@ -32,6 +32,17 @@ export const defaultToToken = <
     data: Awaited<ReturnType<P[keyof P]["authenticate"]>>["data"]
   ): T => {
   if (defaultUser in data == false)
-    throw new ValidationError('Default User is missing')
+    throw new ValidationError('Default User is missing in Provider Authenticate Data Return')
+  if (typeof data[defaultUser] !== 'object')
+    throw new ValidationError('Default User is not an object or is missing')
+  if ('id' in data[defaultUser] == false)
+    throw new ValidationError('Default User ID needs to be present if Default User is present in Provider Authenticate Data Return')
+  if ('name' in data[defaultUser] == true && typeof data[defaultUser].name !== 'string')
+    throw new ValidationError('Default User Name needs to be a string if Default User is present in Provider Authenticate Data Return')
+  if ('email' in data[defaultUser] == true && typeof data[defaultUser].email !== 'string')
+    throw new ValidationError('Default User Email needs to be a string if Default User is present in Provider Authenticate Data Return')
+  if ('image' in data[defaultUser] == true && typeof data[defaultUser].image !== 'string')
+    throw new ValidationError('Default User Image needs to be a string if Default User is present in Provider Authenticate Data Return')
+
   return data[defaultUser] as T
 }

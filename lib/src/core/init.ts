@@ -1,11 +1,12 @@
 import { defaultToToken, defaultValidateToken } from "./base/default-callbacks";
 import { Config, DefaultT, ToSession, ToToken, ValidateToken } from "./modules/config";
-import { CookieStore, OneTimeCookieStore } from "./modules/cookie";
-import { JWTWrapper } from "./modules/jwt";
+import { Cookie, CookieStore, OneTimeCookieStore, validateCookie, validateHeader } from "./modules/cookie";
+import { ConfigError } from "./modules/error";
+import { JWT, JWTWrapper, validateJWT } from "./modules/jwt";
 import { InitializedProvider, ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers";
 import { validateRedirectTo } from "./modules/redirect";
-import { getRequestContext as _getRequestContext } from "./modules/request";
-import { SessionStore } from "./modules/session";
+import { getRequestContext, Path } from "./modules/request";
+import { SessionHandler } from "./modules/session";
 
 export function init<
   P extends Providers,
@@ -13,8 +14,21 @@ export function init<
   S = Awaited<T>,
 >(cfg: Config<P, T, S>) {
 
-  const expiry
-    = cfg.expiry ?? 1800
+  const expiry: unknown
+    = cfg.expiry
+  if (typeof expiry !== 'number')
+    throw new ConfigError('Expiry must be a number')
+  if (expiry <= 0)
+    throw new ConfigError('Expiry must be greater than 0')
+
+  const secret: unknown
+    = cfg.secret
+  if (!secret)
+    throw new ConfigError('Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable')
+  if (typeof secret !== 'string')
+    throw new ConfigError('Secret must be a string')
+
+  const authPath = Path(cfg.authPath, 'authPath')
 
   const sessionConfig = {
     cookieName:
@@ -23,17 +37,38 @@ export function init<
       cfg.session?.issuer ?? 'nu-auth',
   }
 
-  const secret
-    = cfg.secret
+  const toToken
+    = cfg.toToken ?? defaultToToken
+  if (typeof toToken !== 'function')
+    throw new ConfigError('toToken must be a function')
+
+  const validate
+    = cfg.validate ?? defaultValidateToken as ValidateToken<T>
+  if (typeof validate !== 'function')
+    throw new ConfigError('validate must be a function')
+
+  const toSession
+    = cfg.toSession ?? (async (token) => token) as ToSession<T, S>
+  if (typeof toSession !== 'function')
+    throw new ConfigError('toSession must be a function')
+
+  const jwt
+    = validateJWT(cfg.jwt)
+
+  const cookie
+    = validateCookie(cfg.cookie)
+
+  const header
+    = validateHeader(cfg.header)
 
   const sessionStore
-    = new SessionStore<P, T>(
+    = new SessionHandler<P, T>(
       sessionConfig.cookieName,
       sessionConfig.issuer,
       expiry,
-      cfg.secret,
-      cfg.cookie,
-      cfg.jwt,
+      secret,
+      cookie,
+      jwt,
     )
 
   const redirectStore
@@ -57,30 +92,15 @@ export function init<
       },
     )
 
-  const toToken
-    = cfg.toToken ?? defaultToToken
-
-  const validate
-    = cfg.validate ?? defaultValidateToken as ValidateToken<T>
-
-  const toSession
-    = cfg.toSession ?? (async (token) => token) as ToSession<T, S>
-
   const redirect
     = cfg.redirect
 
-  const baseAuthURL
-    = cfg.hostAuthPathURL
-
   const routes
     = {
-    signIn: `${ baseAuthURL }/sign-in`,
-    signOut: `${ baseAuthURL }/sign-out`,
-    callback: `${ baseAuthURL }/callback`,
+    signIn: `${ authPath }/sign-in`,
+    signOut: `${ authPath }/sign-out`,
+    callback: `${ authPath }/callback`,
   }
-
-  const getRequestContext
-    = (request?: Request) => _getRequestContext(cfg, request)
 
   const getProvider
     = <ID extends keyof P>
@@ -94,6 +114,14 @@ export function init<
       )
     }
 
+  const requestContext = getRequestContext(
+    cfg.request,
+    authPath,
+    cookie,
+    header,
+    redirect
+  )
+
   return {
     expiry,
     csrfStore,
@@ -102,10 +130,10 @@ export function init<
     toToken,
     validate,
     toSession,
-    getRequestContext,
     getProvider,
     redirect,
     routes,
+    requestContext,
   }
 }
 
@@ -116,3 +144,5 @@ export type AuthContext<
 >
   = ReturnType<typeof init<P, T, S>>
 
+export type RequestContext
+  = AuthContext['requestContext']

@@ -1,0 +1,27 @@
+import { AuthContext } from "../init"
+import { InvalidParameterError } from "../modules/error"
+
+export function createCSRF(
+  $: AuthContext,
+) {
+  const csrf = crypto.randomUUID()
+  $.csrfStore.set(csrf)
+  return csrf
+}
+
+export async function checkCSRF(
+  $: AuthContext,
+) {
+  const header = $.requestContext.header
+  const cookie = $.requestContext.cookie
+
+  const csrfHeader = header.get('x-csrf-token')
+  if (cookie.get('csrf') !== csrfHeader)
+    throw new CSRFError()
+}
+
+export class CSRFError extends InvalidParameterError {
+  constructor() {
+    super('CSRF Token is invalid')
+  }
+}

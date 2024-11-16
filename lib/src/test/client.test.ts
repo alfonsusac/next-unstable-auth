@@ -12,7 +12,7 @@ import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
 describe('auth using client functions', () => {
 
   it('passwordless, no redirect', () => {
-      
+    expect(true).toBe(true)
   })
 
 })

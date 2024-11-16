@@ -1,4 +1,6 @@
-export class JWTWrapper{
+import { ConfigError } from "./error"
+
+export class JWTWrapper {
   constructor(
     private secret: string,
     private jwt: JWT
@@ -19,4 +21,22 @@ export type JWT = {
 
 export function nowInSeconds() {
   return Math.floor(Date.now() / 1000)
+}
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+
+export function validateJWT(jwt: unknown) {
+  if (!jwt)
+    throw new ConfigError('JWT is required')
+  if (typeof jwt !== 'object')
+    throw new ConfigError('JWT must be an object')
+  if ('sign' in jwt === false || typeof jwt['sign'] !== 'function')
+    throw new ConfigError('JWT.sign must be a function')
+  if ('verify' in jwt === false || typeof jwt['verify'] !== 'function')
+    throw new ConfigError('JWT.verify must be a function')
+  return jwt as JWT
 }

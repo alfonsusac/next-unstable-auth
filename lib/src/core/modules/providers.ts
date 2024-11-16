@@ -1,6 +1,12 @@
 import { CredentialSchema, ToCredentialValues, ToCredentialValues as V } from "./credentials";
 import { RequestContext } from "./request";
 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Primary Provider functions
+
+
+
 export type Provider
   <
     C = any,
@@ -11,6 +17,15 @@ export type Provider
     authenticate: Authenticate<C, D, I>,
     authorize: Authorize<I>,
   }
+
+export type Providers = { [key in string]: Provider }
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Authenticate & Authorize functions
+
+
 
 export type Authenticate
   <
@@ -29,7 +44,7 @@ export type AuthenticateParameters<C> = {
   credentials: C,
   callbackURI: string,
   redirectTo: string | null,
-  requestContext?: RequestContext
+  requestContext: RequestContext
 }
 
 export type DefaultAuthenticateData
@@ -48,19 +63,24 @@ export type Authorize
       update: false
     }>
 
-export type Providers = { [key in string]: Provider }
 
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Provider fields
 
 
 
-
+export type ProviderFields
+  <P extends Provider>
+  = P['fields'] extends infer X ? (
+    X extends (input: unknown) => infer A ? any extends A ? undefined : A : never
+  ) : never
 
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Default Provider Data & Default symbols
 
 
 
@@ -82,6 +102,7 @@ export type DefaultUser
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Provider Handler - initializes providers
 
 
 
@@ -91,6 +112,7 @@ export class ProviderHandler<
 > {
 
   provider: P[ID]
+  hasFields: boolean
 
   constructor(
     providers: P,
@@ -98,6 +120,7 @@ export class ProviderHandler<
     readonly callbackURI: string,
   ) {
     this.provider = validateProviderId(providers, id)
+    this.hasFields = !!this.provider.fields
   }
 
   authenticate
@@ -108,6 +131,9 @@ export class ProviderHandler<
         credentials
       }: Omit<AuthenticateParameters<any>, "callbackURI">
     ) => {
+      if (this.hasFields && !credentials)
+        throw new Error("Credentials required for this provider")
+
       const validatedParam
         = this.provider.fields?.(credentials) ?? undefined
 
@@ -133,7 +159,6 @@ export class ProviderHandler<
   $fieldValues
     = undefined as P[ID] extends Provider<infer X> ? X : undefined
 }
-
 
 export type InitializedProvider<
   P extends Provider = Provider,
@@ -162,6 +187,7 @@ export type InitializedAuthenticate
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Utility functions
 
 
 
@@ -171,22 +197,6 @@ export function Provider<
   I = any,
 >(provider: Provider<C, D, I>) {
   return provider
-}
-
-
-
-export function initializeProviders<
-  P extends Providers = Providers
->(providers: P) {
-
-  // Add the ID to each provider
-  const entries = Object.fromEntries(
-    Object.entries(providers).map(
-      ([key, value]) => [key, { ...value, id: key }]
-    )
-  )
-
-  return entries as { [key in Exclude<keyof P, symbol>]: InitializedProvider<P[key]> }
 }
 
 
@@ -207,12 +217,3 @@ export function validateProviderId<
 }
 
 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-
-export type ProviderCredentialValues<P extends Provider>
-  = P['fields'] extends infer X
-  ? X extends CredentialSchema
-  ? ToCredentialValues<X> : {} : {}

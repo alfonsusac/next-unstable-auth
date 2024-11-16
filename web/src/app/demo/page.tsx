@@ -3,18 +3,20 @@ import { PlusSymbol } from "@/ui/plusgrid";
 import { Suspense } from "react";
 
 export default function DemoPage() {
+  const rng = Math.random();
   return (
     <div className="w-full px-4 flex flex-col items-center">
       <Suspense fallback="Loading...">
         <DemoContent />
       </Suspense>
+      {rng}
     </div>
   );
 }
 
 async function DemoContent() {
   const { session } = await getSession();
-  
+
   return (
     <form className="relative border-zinc-500/20 border-t-transparent border w-full max-w-2xl">
       <div className="sticky h-0 bg-zinc-500/20 z-50 self-stretch">

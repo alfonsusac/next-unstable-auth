@@ -4,7 +4,7 @@ import { CookieStore, OneTimeCookieStore } from "./util/cookie"
 import { redirect as next_redirect } from "next/navigation"
 import { InitializedProvider, Provider, Providers } from "./providers"
 import { createSessionStore, SessionStore } from "./api/session"
-import { InvalidConfigError, InvalidParameterError } from "./core/modules/error"
+import { ConfigError, InvalidParameterError } from "./core/modules/error"
 
 export type AuthUtils<
   P extends Providers = Providers,
@@ -36,13 +36,13 @@ export function init<C extends Config>(config: C) {
 
   const secret = config.secret || process.env.AUTH_SECRET
   if (!secret)
-    throw new InvalidConfigError('Secret is required')
+    throw new ConfigError('Secret is required')
 
   const apiRoute = config.apiRoute || process.env.AUTH_API_ROUTE || '/api/auth'
   if (!apiRoute.startsWith('/'))
-    throw new InvalidConfigError('API Route must start with /')
+    throw new ConfigError('API Route must start with /')
   if (apiRoute.endsWith('/'))
-    throw new InvalidConfigError('API Route must not end with /')
+    throw new ConfigError('API Route must not end with /')
 
   const baseURL = new URL(config.baseURL || process.env.AUTH_BASE_URL || 'http://localhost:3000').toString()
 

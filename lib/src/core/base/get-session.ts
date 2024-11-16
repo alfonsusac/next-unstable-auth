@@ -1,9 +1,8 @@
 import { AuthContext } from "../init";
-import { DefaultT, ToSession, ValidateToken } from "../modules/config";
-import { Providers, validateProviderId } from "../modules/providers";
-import { RequestContext } from "../modules/request";
-import { SessionStore } from "../modules/session";
-import { defaultValidateToken } from "./default-callbacks";
+import { DefaultT } from "../modules/config";
+import { Providers } from "../modules/providers";
+
+
 
 export async function getSession<
   P extends Providers,
@@ -11,7 +10,6 @@ export async function getSession<
   S = Awaited<T>,
 >(
   $: AuthContext<P, T, S>,
-  $$: RequestContext,
 ) {
 
   const { token, expired }
@@ -35,7 +33,7 @@ export async function getSession<
 
   if (expired) {
     updatedInternalData
-      = await provider.authorize(token.internal, $$)
+      = await provider.authorize(token.internal, $.requestContext)
     updated
       = true
   }

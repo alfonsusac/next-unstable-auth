@@ -1,17 +1,32 @@
 import { cookies, headers } from "next/headers";
 import { AuthCore } from "../core";
-import { Config, DefaultT } from "../core/modules/config";
-import { Provider, Providers } from "../core/modules/providers";
-import { redirect as next_redirect } from "next/navigation";
+import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/config";
+import { defaultUser, Provider, Providers } from "../core/modules/providers";
+import { redirect } from "next/navigation";
 import { jwt } from "../util/jwt";
-import { RequestContext } from "../core/modules/request";
+import { Path } from "../core/modules/request";
+import { ConfigError } from "../core/modules/error";
+import { getServerFunctions } from "./server-functions";
 import { NextRequest } from "next/server";
 
 export type NuAuthConfig<
   P extends Providers,
   T = DefaultT<P>,
   S = T,
-> = Config<P, T, S>
+> = {
+  apiRoute?: `/${ string }`,
+  secret?: string,
+  expiry?: number,
+  providers: P,
+  toToken?: ToToken<P[keyof P], T>,
+  toSession?: ToSession<T, S>,
+  validate?: ValidateToken<T>,
+
+  session?: {
+    cookieName?: string,
+    issuer?: string,
+  }
+}
 
 
 export function NuAuth<
@@ -20,114 +35,129 @@ export function NuAuth<
   S = T,
 >(config: NuAuthConfig<P, T, S>) {
 
-  const auth = AuthCore(config)
+  // - - - - - - - - - - - - - - - - - - - - - - -
+  // Defaults
 
-  const getContext
-    = async (context?: {
-      request?: NextRequest,
-    }): Promise<RequestContext> => {
+  const secret
+    = config.secret
+    ?? process.env.NU_AUTH_SECRET
+  if (!secret)
+    throw new ConfigError('Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable')
 
-      const nextCookie = await cookies()
-      const nextHeader = await headers()
+  const authPath
+    = Path(
+      config.apiRoute
+      ?? process.env.NEXT_PUBLIC_NU_AUTH_API_ROUTE
+      ?? '/auth', 'authPath'
+    )
 
-      const req = () => {
-        if (!context?.request)
-          throw new Error('This operation requires a request object')
-        return context.request
-      }
+  const expiry
+    = config.expiry
+    ?? Number(process.env.NU_AUTH_EXPIRY)
+    ?? 60 * 60 * 24 * 7 // 1 week
 
-      const pathname
-        = () => req().nextUrl.pathname.split(config.hostAuthPathURL)[1].split('?')[0]
-      const segments
-        = () => pathname().split('/').filter(Boolean)
-      
-      return {
-        header: nextHeader,
-        cookie: {
-          get:
-            (name) =>
-              nextCookie.get(name)?.value ?? null,
-          set:
-            (name, value, options) =>
-              nextCookie.set(name, value, options),
-          delete:
-            (name) =>
-              nextCookie.delete(name),
-        },
-        redirect:
-          (url) =>
-            next_redirect(url)
-        ,
-        jwt: {
-          sign:
-            (payload, secret) =>
-              jwt.create(payload, secret),
-          verify:
-            (token, secret) =>
-              jwt.verify(token, secret),
-        },
-        searchParams: () => req().nextUrl.searchParams,
-        segments: () => req().nextUrl.pathname.split('/').filter(Boolean),
-        isRoute: (route) => segments()[0] === route,
-        // isRoute
-        // body
-        // method
-      }
-    }
+  // - - - - - - - - - - - - - - - - - - - - - - -
+  // Get Base Auth
 
-  const getSession
-    = async () => {
-      const $ = await getContext()
-      return auth.getSession($)
-    }
-
-  type SignInOptions = {
-    redirectTo?: `/${ string }`
+  const auth = async (request?: NextRequest) => {
+    const cookie
+      = await cookies()
+    const header
+      = await headers()
+    return AuthCore({
+      secret,
+      authPath,
+      expiry,
+      providers: config.providers,
+      toToken: config.toToken,
+      toSession: config.toSession,
+      validate: config.validate,
+      jwt: {
+        sign: jwt.create,
+        verify: jwt.verify
+      },
+      cookie: {
+        get: (name: string) => cookie.get(name)?.value ?? null,
+        set: cookie.set,
+        delete: cookie.delete
+      },
+      header: {
+        get: header.get,
+        set: header.set
+      },
+      redirect,
+      request,
+    })
   }
 
-  type PFieldSchema = P[keyof P]['fields']
-  type PFields = PFieldSchema extends () => infer F ? F : undefined
+  // - - - - - - - - - - - - - - - - - - - - - - -
+  // Adapt Auth Methods
 
-  const signIn
-    = async <ID extends keyof P>(
-      id:
-        ID extends string ? ID : string,
-      ...args:
-        PFields extends undefined
-        ? [options: SignInOptions]
-        : [credentials: PFields, options: SignInOptions]
-    ) => {
-      const $ = await getContext()
-      if (typeof config.providers[id].fields === "function") {
-        const [credentials, options] = args as [PFields, SignInOptions]
-        if (!credentials) {
-          throw new Error('Credentials are required for providerId: ' + id)
-        }
+  const serverFunctions = getServerFunctions(auth)
 
-        return auth.signIn(id, credentials, options, $)
-      }
-
-      const [options] = args as [SignInOptions]
-      return auth.signIn(id, undefined as PFields, options, $)
+  const routeHandlers
+    = async (request: NextRequest) => {
+      const $ = await auth(request)
+      return $.requestHandler()
     }
 
+  const middleware
+    = async (request: NextRequest) => {
+
+    }
+
+
   return {
-    signIn,
-    getSession,
+    ...serverFunctions,
+    routeHandlers,
     $Type: {
       Token: undefined as T,
       Session: undefined as S,
+      Providers: undefined as unknown as P,
+      Config: undefined as unknown as NuAuthConfig<P, T, S>,
     }
   }
 }
 
 const auth = NuAuth({
-  hostAuthPathURL: 'auth',
+  apiRoute: '/auth',
   secret: '123',
   providers: {
     p1: Provider({
-
       authenticate: async () => ({ data: {}, internal: {} }),
+      authorize: async () => ({ update: false })
+    }),
+    cred: Provider({
+      fields: () => ({
+        email: 'text',
+        password: 'text'
+      }),
+      authenticate: async ($) => {
+
+        const db: any = {}
+
+        // validate credentials
+        if (!$.credentials.email || !$.credentials.password)
+          throw new Error('Invalid Credentials')
+
+        const user = await db.authenticate($.credentials)
+
+        if (!user)
+          throw new Error('User not found')
+
+        return ({
+          data: {
+            [defaultUser]: {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              image: user.image,
+            }
+          },
+          internal: {}
+        })
+
+      },
       authorize: async () => ({ update: false })
     })
   }

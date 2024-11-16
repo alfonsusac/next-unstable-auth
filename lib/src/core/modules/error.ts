@@ -4,7 +4,7 @@
 /**
  * Error class for invalid configuration errors
  */
-export class InvalidConfigError extends Error {
+export class ConfigError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'InvalidConfigError'

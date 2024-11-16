@@ -1,7 +1,12 @@
 import { AuthContext } from "../init"
 import { DefaultT } from "../modules/config"
-import { ProviderHandler, Providers } from "../modules/providers"
+import { ProviderFields, Providers } from "../modules/providers"
 import { RequestContext } from "../modules/request"
+
+export type SignInOptions
+  = {
+    redirectTo?: `/${ string }`
+  }
 
 export async function signIn
   <
@@ -12,9 +17,8 @@ export async function signIn
   >(
     $: AuthContext<P, T, S>,
     id: ID extends string ? ID : never,
-    credentials: ProviderHandler<P, ID>['$fieldValues'],
-    redirectTo: string | null = null,
-    requestContext?: RequestContext,
+    credentials: ID extends string ? (object | undefined) : ProviderFields<P[ID]>,
+    redirectTo: SignInOptions['redirectTo'] | null = null,
   ) {
   const provider
     = $.getProvider(id)
@@ -26,7 +30,7 @@ export async function signIn
     = await provider.authenticate({
       credentials,
       redirectTo,
-      requestContext,
+      requestContext: $.requestContext,
     })
 
   // --- might redirect and cut off here ---
