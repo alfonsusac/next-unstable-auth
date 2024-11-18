@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { AuthCore } from "../core";
 import { SignInOptions } from "../core/base/sign-in";
 import { DefaultT } from "../core/modules/config";
@@ -10,6 +11,8 @@ export function getServerFunctions<
 >(
   auth: () => Promise<AuthCore<P, T, S>>
 ) {
+  console.log("")
+
   const getSession
     = async () => {
       const $
@@ -31,10 +34,8 @@ export function getServerFunctions<
           options?: SignInOptions
         ]
     ) => {
-      type PFields
-        = ProviderFields<P[ID]>
-      const $
-        = await auth()
+      type PFields = ProviderFields<P[ID]>
+      const $ = await auth()
       const provider = $.getProvider(id)
       if (provider.hasFields) {
         if (!args[0])

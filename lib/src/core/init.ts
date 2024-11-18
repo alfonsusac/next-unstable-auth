@@ -5,7 +5,7 @@ import { ConfigError } from "./modules/error";
 import { JWT, JWTWrapper, validateJWT } from "./modules/jwt";
 import { InitializedProvider, ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers";
 import { validateRedirectTo } from "./modules/redirect";
-import { getRequestContext, Path } from "./modules/request";
+import { getRequestContext, getRoutes, Path } from "./modules/request";
 import { SessionHandler } from "./modules/session";
 
 export function init<
@@ -18,6 +18,8 @@ export function init<
     = cfg.expiry
   if (typeof expiry !== 'number')
     throw new ConfigError('Expiry must be a number')
+  if (isNaN(expiry))
+    throw new ConfigError('Expiry must be a number. (NaN)')
   if (expiry <= 0)
     throw new ConfigError('Expiry must be greater than 0')
 
@@ -96,11 +98,28 @@ export function init<
     = cfg.redirect
 
   const routes
-    = {
-    signIn: `${ authPath }/sign-in`,
-    signOut: `${ authPath }/sign-out`,
-    callback: `${ authPath }/callback`,
-  }
+    = getRoutes(authPath)
+
+  const baseURL
+    = cfg.baseURL ?? (() => {
+
+      try {
+        if (cfg.request)
+          return new URL(cfg.request.url).origin
+
+        const proto = cfg.header.get('x-forwarded-proto')
+        if (!proto)
+          return new Error("Unable to get protocol")
+        const host = cfg.header.get('x-forwarded-host')
+        if (!host)
+          return new Error("Unable to get host")
+        return proto + '://' + host
+      } catch (error) {
+        const errormessage = error instanceof Error ? error.message : error
+        throw new ConfigError(`Unable to infer baseURL for redirection URL from the current url from header or request. Please provide a baseURL in the config. (${ errormessage })`)
+      }
+
+    })()
 
   const getProvider
     = <ID extends keyof P>
@@ -110,7 +129,8 @@ export function init<
       return new ProviderHandler<P, ID>(
         cfg.providers,
         id,
-        routes.callback + `/${ id }`,
+        // URGENT - SEPARATE METHOD AND URL
+        baseURL + routes.callback.split(' ')[1] + `/${ id }`,
       )
     }
 
@@ -119,7 +139,7 @@ export function init<
     authPath,
     cookie,
     header,
-    redirect
+    redirect,
   )
 
   return {
@@ -132,7 +152,6 @@ export function init<
     toSession,
     getProvider,
     redirect,
-    routes,
     requestContext,
   }
 }

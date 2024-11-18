@@ -3,12 +3,24 @@ import { Cookie, Header } from "./cookie";
 import { ConfigError, InvalidParameterError } from "./error";
 import { Redirect } from "./redirect";
 
+export function getRoutes(authPath: `/${ string }`) {
+  return {
+    signIn: `POST ${ authPath }/sign-in`,
+    signOut: `POST ${ authPath }/sign-out`,
+    callback: `GET ${ authPath }/callback`,
+    csrf: `GET ${ authPath }/csrf`,
+    session: `GET ${ authPath }/session`,
+  } as const
+}
+
+export type Routes = keyof ReturnType<typeof getRoutes>
+
 export function getRequestContext(
   request: Config<any, any, any>['request'],
   authPath: `/${ string }`,
   cookie: Cookie,
   header: Header,
-  redirect: Redirect
+  redirect: Redirect,
 ) {
   const req
     = () => {
@@ -25,7 +37,13 @@ export function getRequestContext(
   const segments
     = () => pathname().split('/').filter(Boolean)
   const isRoute
-    = (route: string) => segments()[0] === route
+    = (route: Routes) => {
+      try {
+        return segments()[0] === route
+      } catch (error) {
+        return false        
+      }
+    }
   const searchParams
     = () => url().searchParams
   const body
@@ -37,6 +55,7 @@ export function getRequestContext(
         throw new InvalidParameterError('Invalid JSON body')
       }
     }
+
   return {
     cookie,
     header,

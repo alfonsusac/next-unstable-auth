@@ -6,7 +6,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { RootProvider } from "fumadocs-ui/provider";
 import { SVGProps } from "react";
-import Link from "next/link";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -61,12 +60,6 @@ export default function RootLayout({
                 >
                   <div>Demo</div>
                 </a>
-                <Link
-                  href="/demo"
-                  className="opacity-70 hover:opacity-90 cursor-pointer"
-                >
-                  <div>Demo</div>
-                </Link>
                 <a
                   href="/docs"
                   className="opacity-70 hover:opacity-90 cursor-pointer"

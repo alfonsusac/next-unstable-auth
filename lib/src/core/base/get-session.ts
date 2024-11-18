@@ -12,49 +12,55 @@ export async function getSession<
   $: AuthContext<P, T, S>,
 ) {
 
-  const { token, expired }
-    = $.sessionStore.get()
+  try {
+    const { token, expired }
+      = $.sessionStore.get()
 
-  if (!token)
-    return null
+    if (!token)
+      return null
 
-  const provider
-    = $.getProvider(token.providerId)
+    const provider
+      = $.getProvider(token.providerId)
 
-  const data
-    = $.validate(token.data) as Awaited<T>
+    const data
+      = $.validate(token.data) as Awaited<T>
 
-  let updated
-    = false
-  let updatedToken
-    = data
-  let updatedInternalData
-    = token.internal
+    let updated
+      = false
+    let updatedToken
+      = data
+    let updatedInternalData
+      = token.internal
 
-  if (expired) {
-    updatedInternalData
-      = await provider.authorize(token.internal, $.requestContext)
-    updated
-      = true
-  }
-
-  const updateToken
-    = (newToken: Awaited<T>) => {
-      updatedToken
-        = newToken
+    if (expired) {
+      updatedInternalData
+        = await provider.authorize(token.internal, $.requestContext)
       updated
         = true
     }
 
-  const session
-    = await $.toSession(data, updateToken) ?? data
+    const updateToken
+      = (newToken: Awaited<T>) => {
+        updatedToken
+          = newToken
+        updated
+          = true
+      }
 
-  if (updated)
-    await $.sessionStore.set(
-      $.validate?.(updatedToken) as Awaited<T>,
-      token.providerId,
-      updatedInternalData,
-    )
+    const session
+      = await $.toSession(data, updateToken) ?? data
 
-  return session
+    if (updated)
+      $.sessionStore.set(
+        $.validate?.(updatedToken) as Awaited<T>,
+        token.providerId,
+        updatedInternalData,
+      )
+
+    return session
+
+  } catch (error) {
+    $.sessionStore.clear()
+    return null
+  }
 }

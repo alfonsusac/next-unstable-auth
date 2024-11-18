@@ -19,7 +19,7 @@ export async function signIn
     id: ID extends string ? ID : never,
     credentials: ID extends string ? (object | undefined) : ProviderFields<P[ID]>,
     redirectTo: SignInOptions['redirectTo'] | null = null,
-  ) {
+) {
   const provider
     = $.getProvider(id)
 

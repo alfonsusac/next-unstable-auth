@@ -1,4 +1,4 @@
-import { DefaultT, ValidateToken } from "./config"
+import { DefaultT } from "./config"
 import { Cookie, CookieOptions, CookieStore } from "./cookie"
 import { JWT, nowInSeconds } from "./jwt"
 import { Providers } from "./providers"
@@ -23,15 +23,11 @@ export type InternalSession<T = unknown, I = unknown> = {
   expired: boolean,
 }
 
-
-
 export const sessionCookieOption: CookieOptions = {
   secure: true,
   httpOnly: true,
-  sameSite: 'strict',
+  sameSite: 'lax',
 } as const
-
-
 
 export class SessionHandler<
   P extends Providers,
@@ -63,27 +59,30 @@ export class SessionHandler<
     if (typeof providerId !== 'string')
       throw Error('Session.set(): invalid providerId')
 
-    this.cookieStore.set(
-      this.jwt.sign(
-        {
-          t: token,
-          p: providerId,
-          i: internal,
-          e: nowInSeconds() + this.expiry,
-          iat: nowInSeconds(),
-          iss: this.issuer,
-        } satisfies InternalToken,
-        this.secret
-      )
-    )
+    const payload
+      = {
+        t: token,
+        p: providerId,
+        i: internal,
+        e: nowInSeconds() + this.expiry,
+        iat: nowInSeconds(),
+        iss: this.issuer,
+      } satisfies InternalToken
+
+    const signed
+      = this.jwt.sign(payload, this.secret)
+
+    this.cookieStore.set(signed)
+
   }
 
   get() {
-
     const token = this.cookieStore.get()
     if (!token) return { token: null, expired: null }
 
-    const session = this.jwt.verify(token, this.secret)
+    const session
+      = this.jwt.verify(token, this.secret)
+
     if (!session)
       throw new InvalidSession("Invalid session")
     if (typeof session !== "object")
@@ -108,16 +107,12 @@ export class SessionHandler<
       },
       expired: session.e < nowInSeconds(),
     } as InternalSession<Awaited<T>>
-    
+
   }
 
-
-
   clear() {
-
     this.cookieStore.clear()
     return true
-
   }
 }
 

@@ -2,12 +2,13 @@ import { cookies, headers } from "next/headers";
 import { AuthCore } from "../core";
 import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/config";
 import { defaultUser, Provider, Providers } from "../core/modules/providers";
-import { redirect } from "next/navigation";
 import { jwt } from "../util/jwt";
 import { Path } from "../core/modules/request";
 import { ConfigError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { redirect, RedirectType } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export type NuAuthConfig<
   P extends Providers,
@@ -53,8 +54,9 @@ export function NuAuth<
 
   const expiry
     = config.expiry
-    ?? Number(process.env.NU_AUTH_EXPIRY)
-    ?? 60 * 60 * 24 * 7 // 1 week
+      ?? process.env.NU_AUTH_EXPIRY
+      ? Number(process.env.NU_AUTH_EXPIRY)
+      : 60 * 60 * 24 * 7 // 1 week
 
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Get Base Auth
@@ -78,14 +80,34 @@ export function NuAuth<
       },
       cookie: {
         get: (name: string) => cookie.get(name)?.value ?? null,
-        set: cookie.set,
-        delete: cookie.delete
+        set: (...params) => {
+          try {
+            cookie.set(...params)
+          } catch (error) {
+            // catch cookei set error
+            console.log('error', error)
+            // console.log('message', error.message)
+            // console.log('name', error.name)
+          }
+        },
+        delete: (...params) => {
+          try {
+            cookie.delete(...params)
+          } catch (error) {
+            // catch cookie set error
+          }
+        }
       },
       header: {
         get: header.get,
         set: header.set
       },
-      redirect,
+      redirect: (...params) => {
+        console.log("REDIRECTT")
+        console.log(params)
+        revalidatePath(params[0], "layout")
+        return redirect(params[0], RedirectType.push)
+      },
       request,
     })
   }
@@ -98,7 +120,8 @@ export function NuAuth<
   const routeHandlers
     = async (request: NextRequest) => {
       const $ = await auth(request)
-      return $.requestHandler()
+      const data = await $.requestHandler()
+      return NextResponse.json(data)
     }
 
   const middleware
@@ -119,48 +142,52 @@ export function NuAuth<
   }
 }
 
-const auth = NuAuth({
-  apiRoute: '/auth',
-  secret: '123',
-  providers: {
-    p1: Provider({
-      authenticate: async () => ({ data: {}, internal: {} }),
-      authorize: async () => ({ update: false })
-    }),
-    cred: Provider({
-      fields: () => ({
-        email: 'text',
-        password: 'text'
-      }),
-      authenticate: async ($) => {
 
-        const db: any = {}
+// - - - - - - - - - - - - - - - - - - - - - - - - 
+// Playground
 
-        // validate credentials
-        if (!$.credentials.email || !$.credentials.password)
-          throw new Error('Invalid Credentials')
+// const auth = NuAuth({
+//   apiRoute: '/auth',
+//   secret: '123',
+//   providers: {
+//     p1: Provider({
+//       authenticate: async () => ({ data: {}, internal: {} }),
+//       authorize: async () => ({ update: false })
+//     }),
+//     cred: Provider({
+//       fields: () => ({
+//         email: 'text',
+//         password: 'text'
+//       }),
+//       authenticate: async ($) => {
 
-        const user = await db.authenticate($.credentials)
+//         const db: any = {}
 
-        if (!user)
-          throw new Error('User not found')
+//         // validate credentials
+//         if (!$.credentials.email || !$.credentials.password)
+//           throw new Error('Invalid Credentials')
 
-        return ({
-          data: {
-            [defaultUser]: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              image: user.image,
-            }
-          },
-          internal: {}
-        })
+//         const user = await db.authenticate($.credentials)
 
-      },
-      authorize: async () => ({ update: false })
-    })
-  }
-})
+//         if (!user)
+//           throw new Error('User not found')
 
-auth.signIn('p1', { redirectTo: '/a' })
+//         return ({
+//           data: {
+//             [defaultUser]: {
+//               id: user.id,
+//               email: user.email,
+//               name: user.name,
+//               image: user.image,
+//             }
+//           },
+//           internal: {}
+//         })
+
+//       },
+//       authorize: async () => ({ update: false })
+//     })
+//   }
+// })
+
+// auth.signIn('p1', { redirectTo: '/a' })

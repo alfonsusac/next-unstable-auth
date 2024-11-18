@@ -31,6 +31,8 @@ export type Config<
       cookieName?: string,
       issuer?: string,
     }
+    baseURL?: string,
+
   }
 
 

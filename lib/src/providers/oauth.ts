@@ -1,22 +1,64 @@
-import { HandlerRequestContext } from "../api/handler/context";
-import { AuthenticateParams, AuthenticateReturn, AuthorizeReturn, CredSchema, Provider } from "../providers";
+// import { HandlerRequestContext } from "../api/handler/context";
+// import { AuthenticateParams, AuthenticateReturn, AuthorizeReturn, CredSchema, Provider } from "../providers";
 
-type InitiateOAuthParams = Omit<AuthenticateParams, "handlerContext">
+import { RequestContext } from "../core/init";
+import { AuthenticateParameters, AuthenticateReturn, AuthorizeReturn, DefaultAuthenticateData, Provider } from "../core/modules/providers";
 
-export function OAuthProvider<A = any, I = any>($: {
-  initiateOAuth: (context: InitiateOAuthParams) => Promise<never>,
-  completeOAuth: (context: HandlerRequestContext) => Promise<AuthenticateReturn<A, I>>,
-  refreshToken?: (refreshToken: I) => Promise<AuthorizeReturn<I>>,
-} & Omit<Provider, "authorize" | "authenticate" | "credentials">) {
+type InitiateOAuthParams
+  = Omit<AuthenticateParameters<any>, "handlerContext">
 
-  return Provider<CredSchema, A, I>({
-    "authenticate": async (param: AuthenticateParams<CredSchema>): Promise<{ data: A; internal: I; }> => {
-      if (!param.handlerContext) {
+export function OAuthProvider<
+  A extends DefaultAuthenticateData,
+  I = any
+>(
+  $: {
+    initiateOAuth:
+    (context: InitiateOAuthParams) => Promise<never>,
+    completeOAuth:
+    (context: RequestContext) => Promise<AuthenticateReturn<A, I>>,
+    refreshToken?:
+    (refreshToken: I) => Promise<AuthorizeReturn<I>>,
+  }
+) {
+  return Provider<any, A, I>({
+    authenticate:
+      async (param: AuthenticateParameters<any>) => {
+        if (param.requestContext.isRoute('callback')) {
+          return $.completeOAuth(param.requestContext)
+        }
+        return $.initiateOAuth(param)
+      },
+    authorize:
+      async (internal: I) => {
+        return await $.refreshToken?.(internal)
+          ?? await (async () => { return { update: false } })()
+      }
+  })
+
+
+}
+
+
+
+export function OAuthProvider1<A extends DefaultAuthenticateData, I = any>(
+  $: {
+    initiateOAuth: (context: InitiateOAuthParams) => Promise<never>,
+    completeOAuth: (context: RequestContext) => Promise<AuthenticateReturn<A, I>>,
+    refreshToken?: (refreshToken: I) => Promise<AuthorizeReturn<I>>,
+  }
+) {
+
+  return Provider<any, A, I>({
+    "authenticate": async (param: AuthenticateParameters<any>)
+      : Promise<{ data: A; internal: I; }> => {
+
+      if (!param.requestContext) {
         return await $.initiateOAuth(param)
       }
-      return await $.completeOAuth(param.handlerContext)
+      return await $.completeOAuth(param.requestContext)
     },
-    "authorize": async function (data: I): Promise<AuthorizeReturn<I>> {
+    "authorize": async function (data: I)
+      : Promise<AuthorizeReturn<I>> {
       return await $.refreshToken?.(data)
         ?? await (async () => { return { update: false } })()
     },

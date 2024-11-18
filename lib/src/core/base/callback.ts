@@ -34,7 +34,6 @@ export async function callback<
     internal
   )
 
-
   if (redirectTo)
     $.redirect(redirectTo)
 

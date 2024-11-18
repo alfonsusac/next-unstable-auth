@@ -1,4 +1,3 @@
-import { CredentialSchema, ToCredentialValues, ToCredentialValues as V } from "./credentials";
 import { RequestContext } from "./request";
 
 
@@ -23,8 +22,8 @@ export type Providers = { [key in string]: Provider }
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Authenticate & Authorize functions
-
+// Authenticate
+ 
 
 
 export type Authenticate
@@ -35,20 +34,31 @@ export type Authenticate
   > = (
     $: AuthenticateParameters<C>
   ) =>
-    Promise<{
-      data: D,
-      internal: I
-    }>
+    Promise<AuthenticateReturn<D, I>>
 
-export type AuthenticateParameters<C> = {
-  credentials: C,
-  callbackURI: string,
-  redirectTo: string | null,
-  requestContext: RequestContext
-}
+export type AuthenticateReturn<D, I>
+  = {
+    data: D,
+    internal: I
+  }
+
+export type AuthenticateParameters<C>
+  = {
+    credentials: C,
+    callbackURI: string,
+    redirectTo: string | null,
+    requestContext: RequestContext
+  }
 
 export type DefaultAuthenticateData
   = object & { [defaultUser]?: DefaultUser }
+
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Authorize
+
+
 
 export type Authorize
   <I>
@@ -56,13 +66,21 @@ export type Authorize
     internalData: I,
     context: RequestContext
   ) =>
-    Promise<{
-      update: true,
-      newInternal: I
-    } | {
-      update: false
-    }>
+    Promise<AuthorizeReturn<I>>
 
+export type AuthorizeReturn<I>
+  = {
+    update: true,
+    newInternal: I
+  } | {
+    update: false
+  }
+
+export type AuthorizeParameter<I>
+  = [
+    internalData: I,
+    context: RequestContext
+  ]
 
 
 
@@ -131,12 +149,13 @@ export class ProviderHandler<
         credentials
       }: Omit<AuthenticateParameters<any>, "callbackURI">
     ) => {
+
       if (this.hasFields && !credentials)
         throw new Error("Credentials required for this provider")
 
       const validatedParam
         = this.provider.fields?.(credentials) ?? undefined
-
+      
       return await this.provider.authenticate({
         credentials: validatedParam,
         redirectTo,

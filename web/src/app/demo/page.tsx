@@ -1,5 +1,6 @@
 import { auth, getSession, signIn } from "@/lib/auth";
 import { PlusSymbol } from "@/ui/plusgrid";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 
 export default function DemoPage() {
@@ -15,7 +16,7 @@ export default function DemoPage() {
 }
 
 async function DemoContent() {
-  const { session } = await getSession();
+  const session = await getSession();
 
   return (
     <form className="relative border-zinc-500/20 border-t-transparent border w-full max-w-2xl">
@@ -37,6 +38,16 @@ async function DemoContent() {
           Sign In via Google
         </button>
 
+        <button
+          formAction={async () => {
+            "use server"
+            const header = await headers()
+            console.log(Object.fromEntries(header.entries()));
+          }}
+        >
+          Get Header Test
+        </button>
+
         <div className="relative w-full max-w-xl p-2 px-4 border border-zinc-500/10">
           <PlusSymbol className="left-0 top-0 absolute" />
           <div className="w-full overflow-auto relative">
@@ -48,7 +59,7 @@ async function DemoContent() {
         {session ? (
           <button
             formAction={async () => {
-              ("use server");
+              "use server";
               await auth.signOut();
             }}
           >

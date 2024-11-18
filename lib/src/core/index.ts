@@ -10,6 +10,7 @@ import { CookieOptions } from "./modules/cookie";
 import { SignInOptions } from "./base/sign-in";
 import { InvalidParameterError } from "./modules/error";
 import { validateSignInBody } from "./shared/validations";
+import { getPathFromURL } from "./modules/url";
 
 
 
@@ -39,7 +40,7 @@ export function AuthCore<
         $,
         id,
         credentials,
-        options?.redirectTo,
+        options?.redirectTo ?? getPathFromURL($.requestContext.header.get('referer')),
       )
     }
 
@@ -171,57 +172,57 @@ export type AuthCore<
 
 
 
-const auth = AuthCore({
-  expiry: 60 * 60 * 24 * 7,
-  secret: 'my-secret',
-  session: {
-    cookieName: 'my-cookie',
-    issuer: 'my-issuer',
-  },
-  providers: {
-    provider: Provider({
-      fields: () => {
-        return {
-          email: 'text',
-          password: 'text'
-        };
-      },
-      authenticate: async () => ({ data: {}, internal: {} }),
-      authorize: async () => ({ update: false })
-    })
-  },
-  authPath: "/auth",
-  jwt: {
-    sign: function (payload: any, secret: string): string {
-      throw new Error("Function not implemented.");
-    },
-    verify: function (token: string, secret: string): unknown {
-      throw new Error("Function not implemented.");
-    }
-  },
-  cookie: {
-    get: function (name: string): string | null {
-      throw new Error("Function not implemented.");
-    },
-    set: function (name: string, value: string, options?: CookieOptions): void {
-      throw new Error("Function not implemented.");
-    },
-    delete: function (name: string): void {
-      throw new Error("Function not implemented.");
-    }
-  },
-  header: {
-    get: function (name: string): string | null {
-      throw new Error("Function not implemented.");
-    },
-    set: function (name: string, value: string): void {
-      throw new Error("Function not implemented.");
-    }
-  },
-  redirect: function (url: string): never {
-    throw new Error("Function not implemented.");
-  }
-})
+// const auth = AuthCore({
+//   expiry: 60 * 60 * 24 * 7,
+//   secret: 'my-secret',
+//   session: {
+//     cookieName: 'my-cookie',
+//     issuer: 'my-issuer',
+//   },
+//   providers: {
+//     provider: Provider({
+//       fields: () => {
+//         return {
+//           email: 'text',
+//           password: 'text'
+//         };
+//       },
+//       authenticate: async () => ({ data: {}, internal: {} }),
+//       authorize: async () => ({ update: false })
+//     })
+//   },
+//   authPath: "/auth",
+//   jwt: {
+//     sign: function (payload: any, secret: string): string {
+//       throw new Error("Function not implemented.");
+//     },
+//     verify: function (token: string, secret: string): unknown {
+//       throw new Error("Function not implemented.");
+//     }
+//   },
+//   cookie: {
+//     get: function (name: string): string | null {
+//       throw new Error("Function not implemented.");
+//     },
+//     set: function (name: string, value: string, options?: CookieOptions): void {
+//       throw new Error("Function not implemented.");
+//     },
+//     delete: function (name: string): void {
+//       throw new Error("Function not implemented.");
+//     }
+//   },
+//   header: {
+//     get: function (name: string): string | null {
+//       throw new Error("Function not implemented.");
+//     },
+//     set: function (name: string, value: string): void {
+//       throw new Error("Function not implemented.");
+//     }
+//   },
+//   redirect: function (url: string): never {
+//     throw new Error("Function not implemented.");
+//   }
+// })
 
 // auth.signIn('provider', {
 //   email: 'email',

@@ -1,6 +1,6 @@
-import { Google, NextJWTAuth } from "nextjwtauth"
+import { Google, NuAuth } from "nextjwtauth"
 
-export const auth = NextJWTAuth({
+export const auth = NuAuth({
   secret: process.env.AUTH_SECRET!,
   apiRoute: "/api/auth",
   providers: {
@@ -15,7 +15,5 @@ export const auth = NextJWTAuth({
 export const {
   signIn,
   signOut,
-  routeHandler,
-  config,
-  getSession
+  getSession,
 } = auth
