@@ -2,10 +2,10 @@ import { redirect } from "next/navigation"
 import { OneTimeCookieStore } from "../util/cookie"
 import { OAuthProvider } from "./oauth"
 import { decodeIdToken, Google as GoogleArctic } from "arctic"
-import { generateNonce } from "../util/nonce"
 import { defaultUserAuthorizeReturn } from "../config"
 import { InvalidParameterError } from "../core/modules/error"
 import { defaultUser, rawData } from "../core/modules/providers"
+import { generateNonce } from "../core/modules/nonce"
 
 
 export type GoogleOAuthConfig = {

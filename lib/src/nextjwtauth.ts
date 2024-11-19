@@ -15,21 +15,4 @@ export function NextJWTAuth<
   const serverFunctions = getServerFunction($)
   const routeHandler = getNextHandlerFunctions($)
 
-  return {
-    ...serverFunctions,
-    routeHandler,
-    config,
-    $Infer: {
-      Providers: undefined as unknown as P,
-      JWT: undefined as unknown as J,
-      Session: undefined as unknown as S,
-      Config: undefined as unknown as Config<P, J, S>,
-    }
-  }
-
 }
-
-/**
- * Todo List:
- * - [ ] Validate credentials or allow credential to be validated.
- */

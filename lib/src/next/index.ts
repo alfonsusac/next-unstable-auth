@@ -4,7 +4,7 @@ import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/con
 import { defaultUser, Provider, Providers } from "../core/modules/providers";
 import { jwt } from "../util/jwt";
 import { Path } from "../core/modules/request";
-import { ConfigError } from "../core/modules/error";
+import { ConfigError, InvalidParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect, RedirectType } from "next/navigation";
@@ -84,10 +84,8 @@ export function NuAuth<
           try {
             cookie.set(...params)
           } catch (error) {
-            // catch cookei set error
+            // catch cookie set error
             console.log('error', error)
-            // console.log('message', error.message)
-            // console.log('name', error.name)
           }
         },
         delete: (...params) => {
@@ -95,6 +93,7 @@ export function NuAuth<
             cookie.delete(...params)
           } catch (error) {
             // catch cookie set error
+            console.log('error', error)
           }
         }
       },
@@ -115,13 +114,27 @@ export function NuAuth<
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Adapt Auth Methods
 
-  const serverFunctions = getServerFunctions(auth)
+  const serverFunctions
+    = getServerFunctions(auth)
 
   const routeHandlers
     = async (request: NextRequest) => {
       const $ = await auth(request)
-      const data = await $.requestHandler()
-      return NextResponse.json(data)
+      try {
+        const data = await $.requestHandler()
+        return NextResponse.json(data)
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Error in Handler. This error message will only be shown in development environment:\n", error)
+          return Response
+        }
+        if (error instanceof InvalidParameterError)
+          return Response.json({ error: 'Invalid Request' }, { status: 400 })
+        if (error instanceof Error) {
+          console.log("Error in Handler:\n", error)
+        }
+        return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+      }
     }
 
   const middleware

@@ -1,10 +1,11 @@
 import { AuthContext } from "../init"
 import { InvalidParameterError } from "../modules/error"
+import { generateNonce } from "../modules/nonce"
 
 export function createCSRF(
   $: AuthContext,
 ) {
-  const csrf = crypto.randomUUID()
+  const csrf = generateNonce()
   $.csrfStore.set(csrf)
   return csrf
 }

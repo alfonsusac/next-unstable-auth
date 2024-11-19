@@ -3,17 +3,28 @@ import { Cookie, Header } from "./cookie";
 import { ConfigError, InvalidParameterError } from "./error";
 import { Redirect } from "./redirect";
 
+const routes = {
+  signIn: 'POST /sign-in',
+  signOut: 'POST /sign-out',
+  callback: 'GET /callback',
+  csrf: 'GET /csrf',
+  session: 'GET /session',
+  provider: 'GET /provider',
+} as const
+
 export function getRoutes(authPath: `/${ string }`) {
-  return {
-    signIn: `POST ${ authPath }/sign-in`,
-    signOut: `POST ${ authPath }/sign-out`,
-    callback: `GET ${ authPath }/callback`,
-    csrf: `GET ${ authPath }/csrf`,
-    session: `GET ${ authPath }/session`,
-  } as const
+  const newroutes = Object.entries(routes).reduce(
+    (prev, curr, idx) => {
+      const [key, value] = curr as [keyof typeof routes, string]
+      prev[key] = value.replace(' ', ` ${ authPath }`)
+      return prev
+    }, {} as { -readonly [key in keyof typeof routes]: string })
+  return newroutes as {
+    readonly [key in keyof typeof routes]: `/${ string }`
+  }
 }
 
-export type Routes = keyof ReturnType<typeof getRoutes>
+export type Routes = typeof routes[keyof typeof routes]
 
 export function getRequestContext(
   request: Config<any, any, any>['request'],
@@ -39,9 +50,13 @@ export function getRequestContext(
   const isRoute
     = (route: Routes) => {
       try {
-        return segments()[0] === route
+        if (route.split(' ')[0] !== method())
+          return false
+        if (route.split(' ')[1] !== `/${ segments()[0] }`)
+          return false
+        return true
       } catch (error) {
-        return false        
+        return false
       }
     }
   const searchParams

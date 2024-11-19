@@ -3,10 +3,9 @@
 // Constraints: Do not try to re-experiment with the typing system.
 
 import { Config, DefaultT } from "./modules/config";
-import { Provider, ProviderFields, ProviderHandler, Providers, validateProviderId } from "./modules/providers";
+import { ProviderFields, Providers } from "./modules/providers";
 import base from "./base"
-import { AuthContext, init } from "./init";
-import { CookieOptions } from "./modules/cookie";
+import { init } from "./init";
 import { SignInOptions } from "./base/sign-in";
 import { InvalidParameterError } from "./modules/error";
 import { validateSignInBody } from "./shared/validations";
@@ -45,20 +44,12 @@ export function AuthCore<
     }
 
   const callback
-    = async () => {
-      return base.callback<P, T, S>($)
-    }
-
+    = async () => base.callback<P, T, S>($)
   const signOut
-    = async () => {
-      await base.signOut($)
-      return true
-    }
-
+    = async () => base.signOut($)
   const getSession
-    = async () => {
-      return base.getSession($)
-    }
+    = async () => base.getSession($)
+
 
   const getProvider
     = <ID extends keyof P>
@@ -69,25 +60,16 @@ export function AuthCore<
     }
 
   const createCSRF
-    = async () => {
-      const csrf = crypto.randomUUID()
-      $.csrfStore.set(csrf)
-    }
-
+    = () => base.createCSRF($)
   const checkCSRF
-    = () => {
+    = () => base.checkCSRF($)
 
-      const csrfHeader = $.requestContext.header.get('x-csrf-token')
-      if ($.requestContext.cookie.get('csrf') !== csrfHeader)
-        throw new InvalidParameterError('CSRF Token is required and is invalid')
-    }
 
   const requestHandler
     = async () => {
-      const method = $.requestContext.method()
-      const path = $.requestContext.segments()[0]
+      const isRoute = $.requestContext.isRoute
 
-      if (method === 'POST' && path === 'signin') {
+      if (isRoute('POST /sign-in')) {
         checkCSRF()
         const id
           = $.requestContext.segments()[1]
@@ -116,22 +98,22 @@ export function AuthCore<
           signInOption,
         )
       }
-      if (method === 'POST' && path === 'signout') {
+      if (isRoute('POST /sign-out')) {
         checkCSRF()
         return signOut()
       }
-      if (method === 'GET' && path === 'callback') {
+      if (isRoute('GET /callback')) {
         return callback()
       }
-      if (method === 'GET' && path === 'session') {
+      if (isRoute('GET /session')) {
         checkCSRF()
         return getSession()
       }
-      if (method === 'GET' && path === 'provider') {
+      if (isRoute('GET /provider')) {
         const id = $.requestContext.segments()[1]
         return getProvider(id)
       }
-      if (method === 'GET' && path === 'csrf') {
+      if (isRoute('GET /csrf')) {
         return createCSRF()
       }
     }
@@ -145,8 +127,10 @@ export function AuthCore<
     getProvider,
     requestHandler,
     $Infer: {
+      Providers: undefined as unknown as P,
       Token: undefined as T,
       Session: undefined as S,
+      Config: undefined as unknown as Config<P, T, S>,
     }
   }
 }

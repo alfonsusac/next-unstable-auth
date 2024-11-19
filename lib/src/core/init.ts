@@ -1,9 +1,9 @@
 import { defaultToToken, defaultValidateToken } from "./base/default-callbacks";
-import { Config, DefaultT, ToSession, ToToken, ValidateToken } from "./modules/config";
-import { Cookie, CookieStore, OneTimeCookieStore, validateCookie, validateHeader } from "./modules/cookie";
+import { Config, DefaultT, ToSession, ValidateToken } from "./modules/config";
+import { OneTimeCookieStore, validateCookie, validateHeader } from "./modules/cookie";
 import { ConfigError } from "./modules/error";
-import { JWT, JWTWrapper, validateJWT } from "./modules/jwt";
-import { InitializedProvider, ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers";
+import { validateJWT } from "./modules/jwt";
+import { ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers";
 import { validateRedirectTo } from "./modules/redirect";
 import { getRequestContext, getRoutes, Path } from "./modules/request";
 import { SessionHandler } from "./modules/session";
@@ -106,7 +106,6 @@ export function init<
       try {
         if (cfg.request)
           return new URL(cfg.request.url).origin
-
         const proto = cfg.header.get('x-forwarded-proto')
         if (!proto)
           return new Error("Unable to get protocol")
