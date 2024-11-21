@@ -1,10 +1,14 @@
 import { DefaultT } from "./config"
-import { Cookie, CookieOptions, CookieStore } from "./cookie"
-import { JWT, nowInSeconds } from "./jwt"
+import { CookieConfig, CookieOptions, CookieStore } from "./cookie"
+import { JWT, JWTHandler, nowInSeconds } from "./jwt"
 import { Providers } from "./providers"
+import { isNumber, isObject, isString } from "./validation"
 
 
-export type InternalToken<T = unknown, I = unknown> = {
+export type InternalToken<
+  T = unknown,
+  I = unknown
+> = {
   t: T,
   p: string,
   i: I,
@@ -13,7 +17,11 @@ export type InternalToken<T = unknown, I = unknown> = {
   iss: string,
 }
 
-export type InternalSession<T = unknown, I = unknown> = {
+
+export type InternalSession<
+  T = unknown,
+  I = unknown
+> = {
   token: {
     data: T,
     providerId: string,
@@ -23,26 +31,63 @@ export type InternalSession<T = unknown, I = unknown> = {
   expired: boolean,
 }
 
+
+function validateInternalSession<T, I>(token: unknown, issuer: string) {
+  if (!token)
+    throw new Error("Invalid session")
+  if (!isObject(token))
+    throw new Error("Invalid session")
+  if ("t" in token === false || "i" in token === false || "p" in token === false || "e" in token === false || "iat" in token === false || "iss" in token === false)
+    throw new Error("Invalid session")
+  if (!isString(token.iss) || token.iss !== issuer)
+    throw new Error("Invalid issuer")
+  if (!isNumber(token.e))
+    throw new Error("Invalid expiry")
+  if (!isNumber(token.iat) || token.iat > nowInSeconds() || token.iat > token.e)
+    throw new Error("Invalid issuedAt")
+  if (!isString(token.p))
+    throw new Error("Invalid providerId")
+  return token as InternalToken<T, I>
+}
+
+
 export const sessionCookieOption: CookieOptions = {
   secure: true,
   httpOnly: true,
   sameSite: 'lax',
 } as const
 
+
+export type SessionConfig = {
+  cookieName?: string,
+  issuer?: string,
+}
+
+
+export const validateSessionConfig = (cfg?: SessionConfig) => {
+  const config = {
+    cookieName: cfg?.cookieName ?? 'nu-auth',
+    issuer: cfg?.issuer ?? 'nu-auth',
+  }
+  if (!isString(config.cookieName))
+    throw new Error('Config.Session.CookieName must be a string')
+  if (!isString(config.issuer))
+    throw new Error('Config.Session.Issuer must be a string')
+  return config
+}
+
+
 export class SessionHandler<
   P extends Providers,
   T = DefaultT<P>,
 > {
-
   cookieStore: CookieStore
-
   constructor(
     readonly cookieName: string,
     readonly issuer: string,
     readonly expiry: number,
-    readonly secret: string,
-    readonly cookie: Cookie,
-    readonly jwt: JWT,
+    readonly cookie: CookieConfig,
+    readonly jwt: JWTHandler,
   ) {
     this.cookieStore = new CookieStore(
       this.cookie,
@@ -70,34 +115,16 @@ export class SessionHandler<
       } satisfies InternalToken
 
     const signed
-      = this.jwt.sign(payload, this.secret)
+      = this.jwt.sign(payload)
 
     this.cookieStore.set(signed)
-
   }
 
   get() {
-    const token = this.cookieStore.get()
-    if (!token) return { token: null, expired: null }
-
-    const session
-      = this.jwt.verify(token, this.secret)
-
-    if (!session)
-      throw new InvalidSession("Invalid session")
-    if (typeof session !== "object")
-      throw new InvalidSession("Invalid session")
-    if ("t" in session === false || "i" in session === false || "p" in session === false || "e" in session === false || "iat" in session === false || "iss" in session === false)
-      throw new InvalidSession("Invalid session")
-    if (typeof session.iss !== "string" || session.iss !== this.issuer)
-      throw new InvalidSession("Invalid issuer")
-    if (typeof session.e !== "number")
-      throw new InvalidSession("Invalid expiry")
-    if (typeof session.iat !== "number" || session.iat > nowInSeconds() || session.iat > session.e)
-      throw new InvalidSession("Invalid issuedAt")
-    if (typeof session.p !== "string")
-      throw new InvalidSession("Invalid providerId")
-
+    const cookie = this.cookieStore.get()
+    if (!cookie) return { token: null, expired: null }
+    const token = this.jwt.verify(cookie)
+    const session = validateInternalSession<T, any>(token, this.issuer)
     return {
       token: {
         data: session.t,
@@ -107,18 +134,10 @@ export class SessionHandler<
       },
       expired: session.e < nowInSeconds(),
     } as InternalSession<Awaited<T>>
-
   }
 
   clear() {
     this.cookieStore.clear()
     return true
-  }
-}
-
-
-export class InvalidSession extends Error {
-  constructor(msg: string) {
-    super("Session.get(): Invalid token: " + msg)
   }
 }

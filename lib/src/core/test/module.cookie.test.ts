@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { CookieStore, OneTimeCookieStore, validateCookie, validateHeader } from "../modules/cookie";
+import { CookieStore, OneTimeCookieStore, validateCookieConfig } from "../modules/cookie";
+import { validateHeaderConfig } from "../modules/header";
 
 export const mockCookie = {
   get: vi.fn(),
@@ -99,13 +100,13 @@ describe('Module: Cookie', () => {
     })
 
     it('should validate cookie dependency', () => {
-      expect(() => validateCookie(mockCookie)).not.toThrowError()
-      expect(() => validateCookie(null as any)).toThrowError()
+      expect(() => validateCookieConfig(mockCookie)).not.toThrowError()
+      expect(() => validateCookieConfig(null as any)).toThrowError()
     })
 
     it('should validate header dependency', () => {
-      expect(() => validateHeader(mockHeader)).not.toThrowError()
-      expect(() => validateHeader(null as any)).toThrowError()
+      expect(() => validateHeaderConfig(mockHeader)).not.toThrowError()
+      expect(() => validateHeaderConfig(null as any)).toThrowError()
     })
 
   })

@@ -1,5 +1,5 @@
 import { AuthContext } from "../init"
-import { InvalidParameterError } from "../modules/error"
+import { ParameterError } from "../modules/error"
 import { generateNonce } from "../modules/nonce"
 
 export function createCSRF(
@@ -21,7 +21,7 @@ export async function checkCSRF(
     throw new CSRFError()
 }
 
-export class CSRFError extends InvalidParameterError {
+export class CSRFError extends ParameterError {
   constructor() {
     super('CSRF Token is invalid')
   }

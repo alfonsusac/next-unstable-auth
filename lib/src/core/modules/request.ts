@@ -1,36 +1,17 @@
+import { AuthRoutes } from "../base/routes";
 import { Config } from "./config";
-import { Cookie, Header } from "./cookie";
-import { ConfigError, InvalidParameterError } from "./error";
+import { CookieConfig } from "./cookie";
+import { ConfigError, ParameterError } from "./error";
+import { HeaderHandler } from "./header";
 import { Redirect } from "./redirect";
+import { isString } from "./validation";
 
-const routes = {
-  signIn: 'POST /sign-in',
-  signOut: 'POST /sign-out',
-  callback: 'GET /callback',
-  csrf: 'GET /csrf',
-  session: 'GET /session',
-  provider: 'GET /provider',
-} as const
-
-export function getRoutes(authPath: `/${ string }`) {
-  const newroutes = Object.entries(routes).reduce(
-    (prev, curr, idx) => {
-      const [key, value] = curr as [keyof typeof routes, string]
-      prev[key] = value.replace(' ', ` ${ authPath }`)
-      return prev
-    }, {} as { -readonly [key in keyof typeof routes]: string })
-  return newroutes as {
-    readonly [key in keyof typeof routes]: `/${ string }`
-  }
-}
-
-export type Routes = typeof routes[keyof typeof routes]
 
 export function getRequestContext(
   request: Config<any, any, any>['request'],
   authPath: `/${ string }`,
-  cookie: Cookie,
-  header: Header,
+  cookie: CookieConfig,
+  header: HeaderHandler,
   redirect: Redirect,
 ) {
   const req
@@ -48,7 +29,7 @@ export function getRequestContext(
   const segments
     = () => pathname().split('/').filter(Boolean)
   const isRoute
-    = (route: Routes) => {
+    = (route: AuthRoutes) => {
       try {
         if (route.split(' ')[0] !== method())
           return false
@@ -67,7 +48,7 @@ export function getRequestContext(
       try {
         return await request.json()
       } catch (error) {
-        throw new InvalidParameterError('Invalid JSON body')
+        throw new ParameterError('Invalid JSON body')
       }
     }
 
@@ -84,12 +65,13 @@ export function getRequestContext(
 }
 
 export function Path(input: unknown, name?: string) {
-  if (typeof input !== 'string')
+  if (!isString(input))
     throw new ConfigError(`${ name ?? input } is not a string`)
   if (!input.startsWith('/'))
     throw new ConfigError(`${ name ?? input } must start with a forward slash`)
   return input as `/${ string }`
 }
+
 
 export type RequestContext
   = ReturnType<typeof getRequestContext>

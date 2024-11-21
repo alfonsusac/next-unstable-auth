@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { JWTWrapper } from "../modules/jwt"
+import { JWTHandler } from "../modules/jwt"
 
 export const mockJwt = {
   sign: vi.fn(),
@@ -8,10 +8,10 @@ export const mockJwt = {
 
 describe('Module: JWT', () => {
 
-  let jwt: JWTWrapper
+  let jwt: JWTHandler
   let secret = 'secret'
   beforeEach(
-    () => jwt = new JWTWrapper(secret, mockJwt)
+    () => jwt = new JWTHandler(secret, mockJwt)
   )
 
   it('should call jwt.sign with secret when sign is called', () => {

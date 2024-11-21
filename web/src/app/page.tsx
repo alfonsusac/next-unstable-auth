@@ -4,10 +4,6 @@ import { ReactNode, SVGProps } from "react";
 import { codeToHtml } from "shiki";
 
 export default async function Home() {
-  // const header = await headers();
-  // const obj = Object.fromEntries(header);
-
-  // const session = await getSession();
   const cookie = await cookies();
   try {
     cookie.set("ns-auth", "test");

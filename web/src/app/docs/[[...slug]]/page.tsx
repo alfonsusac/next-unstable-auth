@@ -39,6 +39,7 @@ export default async function DocPage(props: {
   );
 }
 
+
 export async function generateStaticParams() {
   return source.generateParams();
 }

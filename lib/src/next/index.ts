@@ -4,11 +4,12 @@ import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/con
 import { defaultUser, Provider, Providers } from "../core/modules/providers";
 import { jwt } from "../util/jwt";
 import { Path } from "../core/modules/request";
-import { ConfigError, InvalidParameterError } from "../core/modules/error";
+import { ConfigError, ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect, RedirectType } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { isPath } from "../core/modules/validation";
 
 export type NuAuthConfig<
   P extends Providers,
@@ -46,17 +47,15 @@ export function NuAuth<
     throw new ConfigError('Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable')
 
   const authPath
-    = Path(
-      config.apiRoute
-      ?? process.env.NEXT_PUBLIC_NU_AUTH_API_ROUTE
-      ?? '/auth', 'authPath'
-    )
+    = config.apiRoute
+    ?? process.env.NEXT_PUBLIC_NU_AUTH_API_ROUTE
+    ?? '/auth'
+  if (!isPath(authPath))
+    throw new ConfigError('AuthPath is required. Please provide an apiRoute in the config or set the NEXT_PUBLIC_NU_AUTH_API_ROUTE environment variable')
 
   const expiry
     = config.expiry
-      ?? process.env.NU_AUTH_EXPIRY
-      ? Number(process.env.NU_AUTH_EXPIRY)
-      : 60 * 60 * 24 * 7 // 1 week
+    ?? Number(process.env.NU_AUTH_EXPIRY) ?? 60 * 60 * 24 * 7
 
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Get Base Auth
@@ -79,33 +78,33 @@ export function NuAuth<
         verify: jwt.verify
       },
       cookie: {
-        get: (name: string) => cookie.get(name)?.value ?? null,
-        set: (...params) => {
-          try {
-            cookie.set(...params)
-          } catch (error) {
-            // catch cookie set error
-            console.log('error', error)
+        get:
+          (name: string) => cookie.get(name)?.value ?? null,
+        set:
+          (...params) => {
+            try {
+              cookie.set(...params)
+            } catch (error) {
+              // TODO - catch cookie set error
+              console.log('error', error)
+            }
+          },
+        delete:
+          (...params) => {
+            try {
+              cookie.delete(...params)
+            } catch (error) {
+              // TODO - catch cookie set error
+              console.log('error', error)
+            }
           }
-        },
-        delete: (...params) => {
-          try {
-            cookie.delete(...params)
-          } catch (error) {
-            // catch cookie set error
-            console.log('error', error)
-          }
-        }
       },
       header: {
         get: header.get,
         set: header.set
       },
       redirect: (...params) => {
-        console.log("REDIRECTT")
-        console.log(params)
-        revalidatePath(params[0], "layout")
-        return redirect(params[0], RedirectType.push)
+        return redirect(params[0])
       },
       request,
     })
@@ -128,7 +127,7 @@ export function NuAuth<
           console.log("Error in Handler. This error message will only be shown in development environment:\n", error)
           return Response
         }
-        if (error instanceof InvalidParameterError)
+        if (error instanceof ParameterError)
           return Response.json({ error: 'Invalid Request' }, { status: 400 })
         if (error instanceof Error) {
           console.log("Error in Handler:\n", error)

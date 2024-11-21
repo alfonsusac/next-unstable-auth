@@ -7,7 +7,7 @@ import { ProviderFields, Providers } from "./modules/providers";
 import base from "./base"
 import { init } from "./init";
 import { SignInOptions } from "./base/sign-in";
-import { InvalidParameterError } from "./modules/error";
+import { ParameterError } from "./modules/error";
 import { validateSignInBody } from "./shared/validations";
 import { getPathFromURL } from "./modules/url";
 
@@ -78,7 +78,7 @@ export function AuthCore<
           = $.getProvider(id)
 
         if (!provider)
-          throw new InvalidParameterError('Provider not found')
+          throw new ParameterError('Provider not found')
 
         const body
           = await $.requestContext.body()
@@ -116,6 +116,7 @@ export function AuthCore<
       if (isRoute('GET /csrf')) {
         return createCSRF()
       }
+      return { message: "Auth Powered by NuAuth - Licensed under MIT - @alfonsusac" }
     }
 
   return {

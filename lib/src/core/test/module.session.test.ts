@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { InvalidSession, sessionCookieOption, SessionHandler } from "../modules/session"
+import { sessionCookieOption, SessionHandler } from "../modules/session"
 import { Providers } from "../modules/providers"
 import { mockCookie } from "./module.cookie.test"
 import { mockJwt } from "./module.jwt.test"
-import { nowInSeconds } from "../modules/jwt"
+import { JWTHandler, nowInSeconds } from "../modules/jwt"
 
 
 
@@ -21,19 +21,15 @@ describe('Module: Session', () => {
       cookieName,
       issuer,
       expiry,
-      secret,
       mockCookie,
-      mockJwt,
+      new JWTHandler(secret, mockJwt),
     )
     vi.clearAllMocks()
   })
 
   describe('SessionHandler', () => {
-
     describe('set()', () => {
-
       const args = ['VAL', 'PID', 'INT'] as const
-
       it('should call jwt.sign with token',
         () => {
           session.set(...args)
@@ -131,7 +127,7 @@ describe('Module: Session', () => {
         () => {
           mockCookie.get.mockReturnValue('TOKEN')
           mockJwt.verify.mockReturnValue(undefined)
-          expect(() => session.get()).toThrowError(InvalidSession)
+          expect(() => session.get()).toThrowError("Invalid issuer")
         })
 
       it('should throw error if session has invalid issuer',
@@ -146,7 +142,7 @@ describe('Module: Session', () => {
           }
           mockCookie.get.mockReturnValue('TOKEN')
           mockJwt.verify.mockReturnValue(mockInternalSession)
-          expect(() => session.get()).toThrowError(InvalidSession)
+          expect(() => session.get()).toThrowError("Invalid session")
         })
 
       it('should throw error if session has invalid expiry',
@@ -161,7 +157,7 @@ describe('Module: Session', () => {
           }
           mockCookie.get.mockReturnValue('TOKEN')
           mockJwt.verify.mockReturnValue(mockInternalSession)
-          expect(() => session.get()).toThrowError(InvalidSession)
+          expect(() => session.get()).toThrowError("Invalid session")
         })
 
     })

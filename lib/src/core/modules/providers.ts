@@ -1,3 +1,4 @@
+import { ParameterError } from "./error";
 import { RequestContext } from "./request";
 
 
@@ -23,7 +24,7 @@ export type Providers = { [key in string]: Provider }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Authenticate
- 
+
 
 
 export type Authenticate
@@ -155,7 +156,7 @@ export class ProviderHandler<
 
       const validatedParam
         = this.provider.fields?.(credentials) ?? undefined
-      
+
       return await this.provider.authenticate({
         credentials: validatedParam,
         redirectTo,
@@ -225,12 +226,13 @@ export function validateProviderId<
   ID extends keyof P
 >(providers: P, id: ID) {
   if (!(id in providers))
-    throw new Error(`Invalid provider ID: ${ String(id) }`)
+    throw new ParameterError(`Invalid provider ID: ${ String(id) }`)
 
-  const provider = providers[id]
+  const provider
+    = providers[id]
 
   if (!provider)
-    throw new Error(`Provider ${ String(id) } not found`)
+    throw new ParameterError(`Provider ${ String(id) } not found`)
 
   return provider
 }

@@ -3,7 +3,7 @@ import { OneTimeCookieStore } from "../util/cookie"
 import { OAuthProvider } from "./oauth"
 import { decodeIdToken, Google as GoogleArctic } from "arctic"
 import { defaultUserAuthorizeReturn } from "../config"
-import { InvalidParameterError } from "../core/modules/error"
+import { ParameterError } from "../core/modules/error"
 import { defaultUser, rawData } from "../core/modules/providers"
 import { generateNonce } from "../core/modules/nonce"
 
@@ -75,21 +75,21 @@ export const Google = (config: GoogleOAuthConfig) => {
     "completeOAuth": async ($) => {
 
       const code = $.searchParams().get('code')
-      if (!code) throw new InvalidParameterError('No code provided')
+      if (!code) throw new ParameterError('No code provided')
 
       const state = $.searchParams().get('state')
-      if (!state) throw new InvalidParameterError('No state provided')
+      if (!state) throw new ParameterError('No state provided')
 
       const [csrf, context] = state.split('|')
 
       const storedState = await oauthCsrfCookie.use();
-      if (csrf !== storedState) throw new InvalidParameterError('Invalid state. Possible CSRF attack')
+      if (csrf !== storedState) throw new ParameterError('Invalid state. Possible CSRF attack')
 
       const storedCodeVerifier = await codeVerifierCookie.use();
-      if (!storedCodeVerifier) throw new InvalidParameterError('No code verifier found. Possible CSRF attack')
+      if (!storedCodeVerifier) throw new ParameterError('No code verifier found. Possible CSRF attack')
 
       const storedRedirect = await redirectCookie.use();
-      if (!storedRedirect) throw new InvalidParameterError('No redirect URI found. Possible CSRF attack')
+      if (!storedRedirect) throw new ParameterError('No redirect URI found. Possible CSRF attack')
 
       const tokens = await google(storedRedirect).validateAuthorizationCode(code, storedCodeVerifier)
 
@@ -120,7 +120,7 @@ export const Google = (config: GoogleOAuthConfig) => {
 
     "refreshToken": async (internal) => {
       if (!config.enableRefreshToken) return { update: false }
-      if (!internal.refreshToken) throw new InvalidParameterError('No refresh token provided. Refresh Token is enabled')
+      if (!internal.refreshToken) throw new ParameterError('No refresh token provided. Refresh Token is enabled')
       const tokens = await google("").refreshAccessToken(internal.refreshToken);
       const refreshToken = tokens.refreshToken()
       return {

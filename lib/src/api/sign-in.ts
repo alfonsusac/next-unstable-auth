@@ -1,7 +1,6 @@
-import { InvalidParameterError } from "../core/modules/error"
+import { ParameterError } from "../core/modules/error"
 import { AuthContext } from "../init"
 import { CredSchema, CredValues, InitializedProvider, Provider, ProviderCredentialValues, Providers } from "../providers"
-import { RouteHandlerContext } from "./handler/context"
 
 
 
@@ -34,7 +33,7 @@ export async function signInFlow<P extends InitializedProvider>(
 
   if (redirectTo) {
     if (!redirectTo.startsWith('/'))
-      throw new InvalidParameterError('Redirect URI must start with /')
+      throw new ParameterError('Redirect URI must start with /')
     await $.redirectURLStore.set(redirectTo)
   }
 
@@ -114,24 +113,24 @@ export function validateSignInParameters<
 
   if (provider.fields) {
     if (!second)
-      throw new InvalidParameterError('Second Parameter: This provider requires credentials.')
+      throw new ParameterError('Second Parameter: This provider requires credentials.')
     if (typeof second !== 'object')
-      throw new InvalidParameterError('Second Parameter: credentials must be an object.')
+      throw new ParameterError('Second Parameter: credentials must be an object.')
     if (third && typeof third !== 'object')
-      throw new InvalidParameterError('Third Parameter: options must be an object if provided.')
+      throw new ParameterError('Third Parameter: options must be an object if provided.')
 
     // TODO - validate options
     const schema = provider.fields
     const credentialValues = second as ProviderCredentialValues<P[ID]>
     for (const key in schema) {
       if (key in second === false) {
-        throw new InvalidParameterError(`Second Parameter: Missing field: ${ key }`)
+        throw new ParameterError(`Second Parameter: Missing field: ${ key }`)
       }
       if (key in second && schema[key].type === "number" && typeof credentialValues[key] !== "number") {
-        throw new InvalidParameterError(`Second Parameter: Field ${ key } must be a number`)
+        throw new ParameterError(`Second Parameter: Field ${ key } must be a number`)
       }
       if (key in second && schema[key].type === "text" && typeof credentialValues[key] !== "string") {
-        throw new InvalidParameterError(`Second Parameter: Field ${ key } must be a number`)
+        throw new ParameterError(`Second Parameter: Field ${ key } must be a number`)
       }
     }
 
@@ -143,7 +142,7 @@ export function validateSignInParameters<
   }
 
   if (second && typeof second !== 'object')
-    throw new InvalidParameterError('Second parameter: options must be an object if provided.')
+    throw new ParameterError('Second parameter: options must be an object if provided.')
 
   // TODO - validate options
 

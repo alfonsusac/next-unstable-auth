@@ -1,7 +1,9 @@
-import { Cookie, Header } from "./cookie";
+import { CookieConfig } from "./cookie";
+import { HeaderConfig } from "./header";
 import { JWT } from "./jwt";
 import { Authenticate, DefaultUser, defaultUser, Provider, Providers } from "./providers";
 import { Redirect } from "./redirect";
+import { SessionConfig } from "./session";
 
 
 
@@ -22,17 +24,13 @@ export type Config<
     validate?: ValidateToken<T>,
 
     jwt: JWT,
-    cookie: Cookie,
-    header: Header,
+    cookie: CookieConfig,
+    header: HeaderConfig,
     redirect: Redirect,
 
     request?: Pick<Request, "url" | "method" | "json">
-    session?: {
-      cookieName?: string,
-      issuer?: string,
-    }
+    session?: SessionConfig,
     baseURL?: string,
-
   }
 
 
@@ -53,6 +51,7 @@ export type ToSession
 
 export type ValidateToken<T>
   = (token: unknown) => NoInfer<T>
+
 
 export type DefaultT<P extends Providers | Provider>
   =

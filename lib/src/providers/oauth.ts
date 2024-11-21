@@ -23,7 +23,7 @@ export function OAuthProvider<
   return Provider<any, A, I>({
     authenticate:
       async (param: AuthenticateParameters<any>) => {
-        if (param.requestContext.isRoute('callback')) {
+        if (param.requestContext.isRoute('GET /callback')) {
           return $.completeOAuth(param.requestContext)
         }
         return $.initiateOAuth(param)
