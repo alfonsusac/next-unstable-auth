@@ -1,11 +1,11 @@
 import { AuthContext } from "../init"
 import { DefaultT } from "../modules/config"
 import { ProviderFields, Providers } from "../modules/providers"
-import { PathLike, URLLike } from "../modules/url"
+import { AbsolutePath, URLString } from "../modules/url"
 
 export type SignInOptions
   = {
-    redirectTo?: PathLike | URLLike
+    redirectTo?: AbsolutePath | URLString
   }
 
 export async function signIn

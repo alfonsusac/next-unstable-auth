@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 
 export async function GET() {
 
@@ -13,5 +13,6 @@ export async function GET() {
     host: header.get("host"),
   });
 
-  redirect('/test')
+  return NextResponse.json("OK")
+  // redirect('/test')
 }

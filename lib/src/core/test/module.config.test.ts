@@ -14,8 +14,7 @@ describe('Module: Config', () => {
     const auth = AuthCore({
       expiry: 60 * 60 * 24 * 7,
       secret: "123",
-      authPath: "/auth",
-      authURL: "http://localhost:3000",
+      authURL: "http://localhost:3000/auth",
       providers: {},
       request: {
         originURL: "http://localhost:3000",
@@ -60,10 +59,8 @@ describe('Module: Config', () => {
     { key: "expiry", value: null, expectedError: "Config.Expiry must be a number" },
     { key: "expiry", value: -1, expectedError: "Config.Expiry must be greater than 0" },
     { key: "secret", value: null, expectedError: "Config.Secret must be a string" },
-    { key: "authPath", value: null, expectedError: "Config.AuthPath must be a string and starts with /" },
-    { key: "authPath", value: "api/auth", expectedError: "Config.AuthPath must be a string and starts with /" },
-    { key: "authURL", value: null, expectedError: "Config.BaseURL must be a string. Received null" },
-    { key: "authURL", value: "www.acme.com", expectedError: "Config.BaseURL must start with http. Received www.acme.com" },
+    { key: "authURL", value: null, expectedError: "Config.AuthURL must be a string. Received null" },
+    { key: "authURL", value: "www.acme.com", expectedError: "Config.AuthURL must start with http. Received www.acme.com" },
     { key: "providers", value: null, expectedError: "Config.Providers must be an object" },
     { key: "providers", value: { p1: Provider(null as any) }, expectedError: "Config.Providers.p1 must be an object" },
     { key: "providers", value: { p1: Provider({ authorize: async () => ({ update: false }) } as any) }, expectedError: "Config.Providers.p1.Authenticate must be a function" },

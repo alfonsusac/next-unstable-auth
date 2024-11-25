@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthCore } from ".."
 import { defaultUser, Provider } from "../modules/providers"
 import { mockCookie, mockHeader } from "./module.cookie.test"
 import { mockJwt } from "./module.jwt.test"
 import { testSignInMethod } from "./helper"
 import { mockRedirect } from "./module.config.test"
+import type { URLString } from "../modules/url"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // Mocks
@@ -71,11 +72,10 @@ const mockProviders = {
 
 }
 
-export const mockAuthURL = "https://www.acme.com"
+export const mockAuthURL = "https://www.acme.com/ayyopath/auth" as URLString
 export const mockOriginURL = "https://feature-branch.acme.com"
 
 export const sharedSettings = {
-  authPath: "/ayyopath" as `/${ string }`,
   authURL: mockAuthURL,
   cookie: mockCookie,
   expiry: 60 * 60 * 24 * 7,
@@ -233,7 +233,6 @@ describe('Module: Core', () => {
       const auth = AuthCore({
         ...sharedSettings,
         authURL: mockAuthURL,
-        authPath: "/auth",
         providers: {
           p1: Provider({
             authenticate: async ($) => {
@@ -247,7 +246,7 @@ describe('Module: Core', () => {
       try {
         await auth.signIn("p1", undefined)
       } catch (error) { }
-      expect(mockRedirect).toBeCalledWith(`${ mockAuthURL }/auth/callback/p1`)
+      expect(mockRedirect).toBeCalledWith(`${ mockAuthURL }/callback/p1`)
     })
   })
 })

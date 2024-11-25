@@ -2,7 +2,7 @@ import { Google, NuAuth } from "nextjwtauth"
 
 export const auth = NuAuth({
   secret: process.env.AUTH_SECRET!,
-  apiRoute: "/api/auth",
+  authURL: "http://localhost:3000/api/auth",
   providers: {
     google: Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

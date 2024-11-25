@@ -1,15 +1,14 @@
-import { defaultToSession, defaultToToken, defaultValidateToken } from "./base/default-callbacks";
-import { getURLFromRoute } from "./base/routes";
-import { Config, DefaultT } from "./modules/config";
-import { OneTimeCookieStore, validateCookieConfig } from "./modules/cookie";
-import { HeaderHandler, validateHeaderConfig } from "./modules/header";
-import { JWTHandler } from "./modules/jwt";
-import { ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers";
-import { validateRedirectTo } from "./modules/redirect";
-import { getRequestContext } from "./modules/request";
-import { SessionHandler, validateSessionConfig } from "./modules/session";
-import { isPath, validateURL } from "./modules/url";
-import { isFunction, isNumber, isObject, isString } from "./modules/validation";
+import { defaultToSession, defaultToToken, defaultValidateToken } from "./base/default-callbacks"
+import { Config, DefaultT } from "./modules/config"
+import { OneTimeCookieStore, validateCookieConfig } from "./modules/cookie"
+import { HeaderHandler, validateHeaderConfig } from "./modules/header"
+import { JWTHandler } from "./modules/jwt"
+import { ProviderHandler, Providers, validateProviderId as _validateProviderId } from "./modules/providers"
+import { validateRedirectTo } from "./modules/redirect"
+import { getRequestContext } from "./modules/request"
+import { SessionHandler, validateSessionConfig } from "./modules/session"
+import { validateURL } from "./modules/url"
+import { isFunction, isNumber, isObject, isString } from "./modules/validation"
 
 
 
@@ -34,12 +33,6 @@ export function init<
   const secret = cfg.secret
   if (!isString(secret))
     throw new Error('Config.Secret must be a string')
-
-
-  // # AuthPath
-  const authPath = cfg.authPath
-  if (!isPath(authPath))
-    throw new Error('Config.AuthPath must be a string and starts with /')
 
 
   // # To Token
@@ -75,7 +68,6 @@ export function init<
     throw new Error('Config.JWT.sign must be a function')
   if (!isFunction(jwtConfig.verify))
     throw new Error('Config.JWT.verify must be a function')
-
   const jwt = new JWTHandler(secret, jwtConfig)
 
 
@@ -106,13 +98,6 @@ export function init<
     cookie, "nu-csrf",
     { secure: true, httpOnly: true },
   )
-  const refererURLStore = new OneTimeCookieStore(
-    cookie, "nu-recent",
-    { secure: true, httpOnly: true },
-  )
-
-
-
 
   // # Request Context
   const request = cfg.request
@@ -135,8 +120,8 @@ export function init<
   // # Auth url
   // this is the main URL that all requests should point to.
   // base URL is requried to construct oauth callback URL
-  const baseURL = validateURL(cfg.authURL, 'Config.BaseURL')
-
+  const authURL = validateURL(cfg.authURL, 'Config.AuthURL')
+  const authTrailingSlashURL = authURL.endsWith('/') ? authURL : authURL + '/'
 
   // # Providers
   const providers = cfg.providers
@@ -159,30 +144,17 @@ export function init<
       return new ProviderHandler<P, ID>(
         cfg.providers,
         id,
-        getURLFromRoute(baseURL, authPath, 'callback', id))
+        new URL(`callback/${ id }`, authTrailingSlashURL).toString(),
+      )
     }
 
-
   const requestContext = getRequestContext({
-    request,
-    authPath,
-    cookie,
-    header,
-    redirect,
-    baseURL,
+    request, authURL, cookie, header, redirect
   })
 
   return {
-    expiry,
-    baseURL,
-    csrfStore,
-    sessionStore,
-    redirectStore,
-    toToken,
-    validate,
-    toSession,
-    getProvider,
-    redirect,
+    expiry, authURL, csrfStore, sessionStore, redirectStore,
+    toToken, validate, toSession, getProvider, redirect,
     requestContext,
   }
 }

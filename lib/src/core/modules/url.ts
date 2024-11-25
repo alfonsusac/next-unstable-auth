@@ -1,26 +1,9 @@
 import { isString } from "./validation";
 
-// export function getPathFromURL(url: string | URL | null | undefined) {
-//   if (!url)
-//     return '/' as `/${ string }`
+export type URLString
+  = `${ string }://${ string }`
 
-//   let pathname: string
-//   if (url instanceof URL) {
-//     pathname = url.pathname;
-//   }
-//   else {
-//     pathname = new URL(url).pathname;
-//   }
-//   if (!pathname.startsWith('/'))
-//     return '/' as `/${ string }`
-//   return pathname as `/${ string }`
-// }
-
-
-
-export type URLLike = `${ string }://${ string }`
-
-export function validateURL(o: unknown, name: string): URLLike {
+export function validateURL(o: unknown, name: string): URLString {
   if (!isString(o))
     throw new Error(`${ name } must be a string. Received ${ String(o) }`)
   if (!o.startsWith('http'))
@@ -34,10 +17,10 @@ export function validateURL(o: unknown, name: string): URLLike {
   } catch {
     throw new Error(`${ name } is not a valid URL. Received ${ String(o) }`)
   }
-  return o as URLLike
+  return o as URLString
 }
 
-export function isURL(o: unknown): o is URLLike {
+export function isURL(o: unknown): o is URLString {
   try {
     validateURL(o, 'URL')
     return true
@@ -48,17 +31,17 @@ export function isURL(o: unknown): o is URLLike {
 
 
 
-export type PathLike = `/${ string }`
+export type AbsolutePath = `/${ string }`
 
-export function validatePath(o: unknown, name: string): PathLike {
+export function validatePath(o: unknown, name: string): AbsolutePath {
   if (!isString(o))
     throw new Error(`${ name } must be a string. Received ${ String(o) }`)
   if (!o.startsWith('/'))
     throw new Error(`${ name } must start with /. Received ${ String(o) }`)
-  return o as PathLike
+  return o as AbsolutePath
 }
 
-export function isPath(o: unknown): o is PathLike {
+export function isPath(o: unknown): o is AbsolutePath {
   try {
     validatePath(o, 'Path')
     return true

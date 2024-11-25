@@ -1,4 +1,4 @@
-import { isPath, isURL, PathLike, URLLike } from "./url"
+import { isPath, isURL, AbsolutePath, URLString } from "./url"
 
 export type Redirect = (to: string) => never
 
@@ -16,9 +16,9 @@ export function validateRedirectTo(pathOrURL: string) {
 
 
 export function processRedirectURLWithProxy($: {
-  baseURL: URLLike,
-  originURL?: URLLike,
-  target?: URLLike | PathLike
+  baseURL: URLString,
+  originURL?: URLString,
+  target?: URLString | AbsolutePath
 }) {
   // If no origin URL is provided, return the target URL
   // no origin URL therefore assumes the request was made from the base URL

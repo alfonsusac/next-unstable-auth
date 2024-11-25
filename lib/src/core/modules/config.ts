@@ -4,6 +4,7 @@ import { JWT } from "./jwt";
 import { Authenticate, DefaultUser, defaultUser, Provider, Providers } from "./providers";
 import { Redirect } from "./redirect";
 import { SessionConfig } from "./session";
+import type { URLString } from "./url";
 
 
 
@@ -14,8 +15,7 @@ export type Config<
 >
   = {
     secret: string,
-    authPath: `/${ string }`,
-    authURL: string,
+    authURL: URLString,
     providers: P,
 
     /** Expiry in seconds */
@@ -26,7 +26,7 @@ export type Config<
 
     jwt: JWT,
     redirect: Redirect,
-    
+
     // Despite related to request context, the lib is stateless. So, they are here.
     cookie: CookieConfig,
     header: HeaderConfig,

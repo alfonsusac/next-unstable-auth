@@ -7,27 +7,26 @@ import { ConfigError, ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect } from "next/navigation";
-import { isPath } from "../core/modules/url";
+import { isPath, type URLString } from "../core/modules/url";
+import { parseNumber } from "../util/parse";
+import { nuAuthBaseUrlEnvKey, nuAuthSecretEnvKey } from "./env-keys";
 
 export type NuAuthConfig<
   P extends Providers,
   T = DefaultT<P>,
   S = T,
 > = {
-  apiRoute?: `/${ string }`,
+  authURL?: URLString,
   secret?: string,
   expiry?: number,
   providers: P,
   toToken?: ToToken<P[keyof P], T>,
   toSession?: ToSession<T, S>,
   validate?: ValidateToken<T>,
-
   session?: {
     cookieName?: string,
     issuer?: string,
   }
-
-  baseUrl?: string,
 }
 
 
@@ -42,30 +41,32 @@ export function NuAuth<
 
   const secret
     = config.secret
-    ?? process.env.NU_AUTH_SECRET
+    ?? process.env[nuAuthSecretEnvKey]
   if (!secret)
-    throw new ConfigError('Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable')
+    throw new Error(`Secret is required. Please provide a secret in the config or set the ${nuAuthSecretEnvKey} environment variable`)
 
-  const authPath
-    = config.apiRoute
-    ?? process.env.NEXT_PUBLIC_NU_AUTH_API_ROUTE
-    ?? '/auth'
-  if (!isPath(authPath))
-    throw new ConfigError('AuthPath is required. Please provide an apiRoute in the config or set the NEXT_PUBLIC_NU_AUTH_API_ROUTE environment variable')
+  const authURL
+    = config.authURL
+    ?? process.env[nuAuthBaseUrlEnvKey] as URLString
 
   const expiry
     = config.expiry
-    ?? Number(process.env.NU_AUTH_EXPIRY) ?? 60 * 60 * 24 * 7
+    ?? parseNumber(process.env.NU_AUTH_EXPIRY, 60 * 60 * 24 * 7) // default to 1 week
 
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Get Base Auth
 
   const auth = async (request?: NextRequest) => {
-    const cookie = await cookies()
-    const header = await headers()
+    const
+      cookie = await cookies(),
+      header = await headers(),
+      referer = header.get('referer')
+    const origin = header.get('origin')
+    
+    
     return AuthCore({
       secret,
-      authPath,
+      authURL: authURL ?? 'https://localhost:3000/auth' as URLString,
       expiry,
       providers: config.providers,
       toToken: config.toToken,
@@ -109,7 +110,7 @@ export function NuAuth<
         method: request?.method,
         originURL: request?.url ?? ''
       },
-      authURL: config.baseUrl ?? process.env.NU_AUTH_BASE_URL ?? '',
+      // authURL: config.baseUrl ?? process.env.NU_AUTH_BASE_URL ?? '',
     })
   }
 
@@ -128,9 +129,10 @@ export function NuAuth<
         return NextResponse.json(data)
 
       } catch (error) {
+        // TODO - clean these up
         if (process.env.NODE_ENV === 'development') {
           console.log("Error in Handler. This error message will only be shown in development environment:\n", error)
-          return Response
+          return Response.json({ error: error instanceof Error ? error.message : error }, { status: 500 })
         }
         if (error instanceof ParameterError)
           return Response.json({ error: 'Invalid Request' }, { status: 400 })
@@ -161,7 +163,10 @@ export function NuAuth<
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - 
-// Playground
+// Error Messages
+
+const requiredSecret = 'Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable'
+
 
 // const auth = NuAuth({
 //   apiRoute: '/auth',
