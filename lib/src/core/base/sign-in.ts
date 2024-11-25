@@ -1,11 +1,11 @@
 import { AuthContext } from "../init"
 import { DefaultT } from "../modules/config"
 import { ProviderFields, Providers } from "../modules/providers"
-import { RequestContext } from "../modules/request"
+import { PathLike, URLLike } from "../modules/url"
 
 export type SignInOptions
   = {
-    redirectTo?: `/${ string }`
+    redirectTo?: PathLike | URLLike
   }
 
 export async function signIn
@@ -18,18 +18,16 @@ export async function signIn
     $: AuthContext<P, T, S>,
     id: ID extends string ? ID : never,
     credentials: ID extends string ? (object | undefined) : ProviderFields<P[ID]>,
-    redirectTo: SignInOptions['redirectTo'] | null = null,
-) {
+    redirectTo: SignInOptions['redirectTo'] | undefined = undefined,
+  ) {
   const provider
     = $.getProvider(id)
 
-  if (redirectTo)
-    $.redirectStore.set(redirectTo)
+  $.redirectStore.set(redirectTo ?? "/")
 
   const { data, internal }
     = await provider.authenticate({
       credentials,
-      redirectTo,
       requestContext: $.requestContext,
     })
 
@@ -47,8 +45,11 @@ export async function signIn
     internal
   )
 
+  // because it is useless after this point
   $.redirectStore.use()
 
+  // use redirect URL from initial input not the one stored in redirectStore
+  // because those are for redirect after user is at the callback URL.
   if (redirectTo)
     $.redirect(redirectTo)
 

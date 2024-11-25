@@ -15,6 +15,7 @@ export type Config<
   = {
     secret: string,
     authPath: `/${ string }`,
+    authURL: string,
     providers: P,
 
     /** Expiry in seconds */
@@ -24,13 +25,14 @@ export type Config<
     validate?: ValidateToken<T>,
 
     jwt: JWT,
+    redirect: Redirect,
+    
+    // Despite related to request context, the lib is stateless. So, they are here.
     cookie: CookieConfig,
     header: HeaderConfig,
-    redirect: Redirect,
-
-    request?: Pick<Request, "url" | "method" | "json">
     session?: SessionConfig,
-    baseURL?: string,
+    request: Partial<Pick<Request, "method" | "json">>
+    & { originURL: string }
   }
 
 

@@ -9,7 +9,6 @@ import { init } from "./init";
 import { SignInOptions } from "./base/sign-in";
 import { ParameterError } from "./modules/error";
 import { validateSignInBody } from "./shared/validations";
-import { getPathFromURL } from "./modules/url";
 
 
 
@@ -39,31 +38,25 @@ export function AuthCore<
         $,
         id,
         credentials,
-        options?.redirectTo ?? getPathFromURL($.requestContext.header.get('referer')),
+        options?.redirectTo,
       )
     }
 
   const callback
-    = async () => base.callback<P, T, S>($)
+    = async () => base.callback($)
   const signOut
     = async () => base.signOut($)
   const getSession
     = async () => base.getSession($)
 
-
-  const getProvider
-    = <ID extends keyof P>
-      (
-        id: ID extends string ? ID : never,
-      ) => {
-      return $.getProvider(id)
-    }
+  const getProvider = <ID extends keyof P>(id: ID extends string ? ID : never) => {
+    return $.getProvider(id)
+  }
 
   const createCSRF
     = () => base.createCSRF($)
   const checkCSRF
     = () => base.checkCSRF($)
-
 
   const requestHandler
     = async () => {

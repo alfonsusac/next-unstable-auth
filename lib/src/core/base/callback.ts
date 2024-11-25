@@ -1,13 +1,7 @@
 import { AuthContext } from "../init";
-import { DefaultT } from "../modules/config";
-import { Providers } from "../modules/providers";
 
-export async function callback<
-  P extends Providers,
-  T = DefaultT<P>,
-  S = Awaited<T>,
->(
-  $: AuthContext<P, T, S>,
+export async function callback(
+  $: AuthContext,
 ) {
   const provider
     = $.getProvider($.requestContext.segments()[1])
@@ -18,7 +12,6 @@ export async function callback<
   const { data, internal }
     = await provider.authenticate({
       credentials: undefined,
-      redirectTo,
       requestContext: $.requestContext,
     })
 
@@ -26,7 +19,7 @@ export async function callback<
     = await $.toToken(data)
 
   const token
-    = $.validate(rtoken) as Awaited<T>
+    = $.validate(rtoken)
 
   $.sessionStore.set(
     token,

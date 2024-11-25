@@ -20,16 +20,14 @@ export type CookieConfig = {
 
 
 export function validateCookieConfig(config: CookieConfig) {
-  if (!config)
-    throw new Error('Cookie is required')
   if (!isObject(config))
-    throw new Error('Cookie must be an object')
+    throw new Error('Config.Cookie must be an object')
   if (!isFunction(config.get))
-    throw new Error('Cookie.get must be a function')
+    throw new Error('Config.Cookie.get must be a function')
   if (!isFunction(config.set))
-    throw new Error('Cookie.set must be a function')
+    throw new Error('Config.Cookie.set must be a function')
   if (!isFunction(config.delete))
-    throw new Error('Cookie.delete must be a function')
+    throw new Error('Config.Cookie.delete must be a function')
   return config
 }
 

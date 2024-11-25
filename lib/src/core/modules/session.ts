@@ -41,10 +41,10 @@ function validateInternalSession<T, I>(token: unknown, issuer: string) {
     throw new Error("Invalid session")
   if (!isString(token.iss) || token.iss !== issuer)
     throw new Error("Invalid issuer")
-  if (!isNumber(token.e))
-    throw new Error("Invalid expiry")
-  if (!isNumber(token.iat) || token.iat > nowInSeconds() || token.iat > token.e)
+  if (!isNumber(token.iat) || token.iat > nowInSeconds())
     throw new Error("Invalid issuedAt")
+  if (!isNumber(token.e) || token.e < token.iat)
+    throw new Error("Invalid expiry")
   if (!isString(token.p))
     throw new Error("Invalid providerId")
   return token as InternalToken<T, I>

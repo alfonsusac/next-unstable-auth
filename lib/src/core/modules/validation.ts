@@ -31,14 +31,6 @@ export function isDefined(o: unknown): o is {} {
   return o !== undefined
 }
 
-export function isPath(o: unknown): o is `/${ string }` {
-  if (!isString(o))
-    return false
-  if (!o.startsWith('/'))
-    return false
-  return true
-}
-
 
 // type TypeOfValues
 //   = "undefined"

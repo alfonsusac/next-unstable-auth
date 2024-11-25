@@ -10,6 +10,7 @@ describe('Module: JWT', () => {
 
   let jwt: JWTHandler
   let secret = 'secret'
+  
   beforeEach(
     () => jwt = new JWTHandler(secret, mockJwt)
   )

@@ -15,7 +15,7 @@ export async function getSession<
   try {
     const { token, expired }
       = $.sessionStore.get()
-
+    
     if (!token)
       return null
 

@@ -8,8 +8,8 @@ import { ProviderHandler, Providers, validateProviderId as _validateProviderId }
 import { validateRedirectTo } from "./modules/redirect";
 import { getRequestContext } from "./modules/request";
 import { SessionHandler, validateSessionConfig } from "./modules/session";
-import { isFunction, isNumber, isObject, isPath, isString } from "./modules/validation";
-
+import { isPath, validateURL } from "./modules/url";
+import { isFunction, isNumber, isObject, isString } from "./modules/validation";
 
 
 
@@ -49,10 +49,9 @@ export function init<
 
 
   // # Validate
-  const validate = cfg.validate ?? defaultValidateToken
+  const validate = cfg.validate ?? (cfg.toToken ? ((data: unknown) => data) : defaultValidateToken)
   if (!isFunction(validate))
     throw new Error('Config.Validate must be a function')
-
 
   // # To Session
   const toSession = cfg.toSession ?? defaultToSession
@@ -74,6 +73,8 @@ export function init<
     throw new Error('Config.JWT must be an object')
   if (!isFunction(jwtConfig.sign))
     throw new Error('Config.JWT.sign must be a function')
+  if (!isFunction(jwtConfig.verify))
+    throw new Error('Config.JWT.verify must be a function')
 
   const jwt = new JWTHandler(secret, jwtConfig)
 
@@ -105,48 +106,53 @@ export function init<
     cookie, "nu-csrf",
     { secure: true, httpOnly: true },
   )
+  const refererURLStore = new OneTimeCookieStore(
+    cookie, "nu-recent",
+    { secure: true, httpOnly: true },
+  )
 
 
-  // # Base URL
-  const baseURL = (() => {
-    if (cfg.baseURL)
-      return cfg.baseURL
-    if (cfg.request)
-      return new URL(cfg.request.url).origin
-    try {
-      const proto = header.get('x-forwarded-proto')
-      if (!proto)
-        return new Error("Unable to get protocol")
-      const host = header.get('x-forwarded-host')
-      if (!host)
-        return new Error("Unable to get host")
-      return proto + '://' + host
-    } catch (error) {
-      throw new Error(`Unable to infer baseURL for redirection URL from the current url from header or request. Please provide a baseURL in the config. (${ error instanceof Error ? error.message : error })`)
-    }
-  })() as `${ string }://${ string }`
-  if (!isString(baseURL))
-    throw new Error('Config.BaseURL must be a string')
-  if (!baseURL.startsWith('http'))
-    throw new Error('Config.BaseURL must start with http')
-  if (!baseURL.includes('://'))
-    throw new Error('Config.BaseURL must include ://')
-  if (baseURL.endsWith('/'))
-    throw new Error('Config.BaseURL must not end with /')
-  
-  if ((() => {
-    try {
-      new URL(baseURL)
-      return false
-    } catch (error) {
-      return true
-    }
-  })()) {
-    throw new Error('Config.BaseURL is not a valid URL')
-  }
+
+
+  // # Request Context
+  const request = cfg.request
+  if (!isObject(request))
+    throw new Error('Config.Request must be an object')
+  validateURL(request.originURL, 'Config.Request.originURL')
+  if (request.method && (!isString(request.method) || !['GET', 'POST'].includes(request.method)))
+    throw new Error('Config.Request.Method must be a valid HTTP method')
+  if (request.json && !isFunction(request.json))
+    throw new Error('Config.Request.JSON must be a function')
+
+  // # Origin URL
+  // originURL is required to construct the redirect URL after oauth authentication
+  // but isn't necessary for the library to function
+  const originURL = cfg.request?.originURL
+  if (originURL)
+    validateURL(originURL, 'Config.Request.originURL')
+
+
+  // # Auth url
+  // this is the main URL that all requests should point to.
+  // base URL is requried to construct oauth callback URL
+  const baseURL = validateURL(cfg.authURL, 'Config.BaseURL')
 
 
   // # Providers
+  const providers = cfg.providers
+  if (!isObject(providers))
+    throw new Error('Config.Providers must be an object')
+  for (const id in providers) {
+    if (!isObject(providers[id]))
+      throw new Error(`Config.Providers.${ id } must be an object`)
+    if (!isFunction(providers[id].authenticate))
+      throw new Error(`Config.Providers.${ id }.Authenticate must be a function`)
+    if (!isFunction(providers[id].authorize))
+      throw new Error(`Config.Providers.${ id }.Authorize must be a function`)
+    if (providers[id].fields && !isFunction(providers[id].fields))
+      throw new Error(`Config.Providers.${ id }.Fields must be a function`)
+  }
+
   const getProvider
     = <ID extends keyof P>
       (id: ID extends string ? ID : never) => {
@@ -156,30 +162,19 @@ export function init<
         getURLFromRoute(baseURL, authPath, 'callback', id))
     }
 
-  
-  // # Request Context
-  const request = cfg.request
-  if (request) {
-    if (!isObject(request))
-      throw new Error('Config.Request must be an object')
-    if (!isString(request.url))
-      throw new Error('Config.Request.URL must be a string')
-    if (!isString(request.method))
-      throw new Error('Config.Request.Method must be a string')
-    if (!isFunction(request.json))
-      throw new Error('Config.Request.JSON must be a function')
-  }
 
-  const requestContext = getRequestContext(
+  const requestContext = getRequestContext({
     request,
     authPath,
     cookie,
     header,
-    redirect)
+    redirect,
+    baseURL,
+  })
 
-  
   return {
     expiry,
+    baseURL,
     csrfStore,
     sessionStore,
     redirectStore,

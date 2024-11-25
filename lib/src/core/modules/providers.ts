@@ -47,7 +47,6 @@ export type AuthenticateParameters<C>
   = {
     credentials: C,
     callbackURI: string,
-    redirectTo: string | null,
     requestContext: RequestContext
   }
 
@@ -145,7 +144,6 @@ export class ProviderHandler<
   authenticate
     = async (
       {
-        redirectTo,
         requestContext,
         credentials
       }: Omit<AuthenticateParameters<any>, "callbackURI">
@@ -159,7 +157,6 @@ export class ProviderHandler<
 
       return await this.provider.authenticate({
         credentials: validatedParam,
-        redirectTo,
         requestContext,
         callbackURI: this.callbackURI,
       })

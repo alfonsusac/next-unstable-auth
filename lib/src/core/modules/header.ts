@@ -8,14 +8,12 @@ export type HeaderConfig = {
 
 
 export function validateHeaderConfig(config: HeaderConfig) {
-  if (!config)
-    throw new Error("Header is required")
   if (!isObject(config))
-    throw new Error("Header must be an object")
+    throw new Error("Config.Header must be an object")
   if (!isFunction(config.get))
-    throw new Error("Header.get must be a function")
+    throw new Error("Config.Header.get must be a function")
   if (!isFunction(config.set))
-    throw new Error("Header.set must be a function")
+    throw new Error("Config.Header.set must be a function")
   return config
 }
 

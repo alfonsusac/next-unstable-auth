@@ -11,5 +11,4 @@ export default {
   getSession,
   createCSRF,
   checkCSRF,
-  
 }

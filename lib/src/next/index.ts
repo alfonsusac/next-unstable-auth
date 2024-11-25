@@ -1,15 +1,13 @@
 import { cookies, headers } from "next/headers";
 import { AuthCore } from "../core";
 import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/config";
-import { defaultUser, Provider, Providers } from "../core/modules/providers";
+import { Providers } from "../core/modules/providers";
 import { jwt } from "../util/jwt";
-import { Path } from "../core/modules/request";
 import { ConfigError, ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
-import { redirect, RedirectType } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { isPath } from "../core/modules/validation";
+import { redirect } from "next/navigation";
+import { isPath } from "../core/modules/url";
 
 export type NuAuthConfig<
   P extends Providers,
@@ -28,6 +26,8 @@ export type NuAuthConfig<
     cookieName?: string,
     issuer?: string,
   }
+
+  baseUrl?: string,
 }
 
 
@@ -61,10 +61,8 @@ export function NuAuth<
   // Get Base Auth
 
   const auth = async (request?: NextRequest) => {
-    const cookie
-      = await cookies()
-    const header
-      = await headers()
+    const cookie = await cookies()
+    const header = await headers()
     return AuthCore({
       secret,
       authPath,
@@ -106,7 +104,12 @@ export function NuAuth<
       redirect: (...params) => {
         return redirect(params[0])
       },
-      request,
+      request: {
+        json: request?.json,
+        method: request?.method,
+        originURL: request?.url ?? ''
+      },
+      authURL: config.baseUrl ?? process.env.NU_AUTH_BASE_URL ?? '',
     })
   }
 
@@ -120,8 +123,10 @@ export function NuAuth<
     = async (request: NextRequest) => {
       const $ = await auth(request)
       try {
+        
         const data = await $.requestHandler()
         return NextResponse.json(data)
+
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
           console.log("Error in Handler. This error message will only be shown in development environment:\n", error)
