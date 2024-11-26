@@ -13,8 +13,8 @@ export function createCSRF(
 export async function checkCSRF(
   $: AuthContext,
 ) {
-  const header = $.requestContext.header
-  const cookie = $.requestContext.cookie
+  const header = $.requestCtx.header
+  const cookie = $.requestCtx.cookie
 
   const csrfHeader = header.get('x-csrf-token')
   if (cookie.get('csrf') !== csrfHeader)

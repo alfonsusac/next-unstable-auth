@@ -22,13 +22,16 @@ export async function signIn
   ) {
   const provider
     = $.getProvider(id)
-
-  $.redirectStore.set(redirectTo ?? "/")
+  const redirectDestination
+    = $.requestCtx.getRedirectURL(redirectTo)
+  const validatedRedirectDestination
+    = $.validateRedirect(redirectDestination)
+  $.redirectStore.set(validatedRedirectDestination)
 
   const { data, internal }
     = await provider.authenticate({
       credentials,
-      requestContext: $.requestContext,
+      requestContext: $.requestCtx,
     })
 
   // --- might redirect and cut off here ---

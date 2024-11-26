@@ -1,13 +1,14 @@
-import { Suspense } from "react";
-import { GetHeaders } from "./dynamic";
+import Link from "next/link";
+import { ClientFetchRoute } from "./client";
 
 export default async function Static() {
   return (
     <div>
       Hello World
-      <Suspense fallback={'...'}>
-        <GetHeaders />
-      </Suspense>
+      <Link href="/header-test-page" prefetch={false}>
+        Go to Header Test Page
+      </Link>
+      <ClientFetchRoute />
     </div>
   );
 }

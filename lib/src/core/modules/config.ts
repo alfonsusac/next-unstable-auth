@@ -26,13 +26,15 @@ export type Config<
 
     jwt: JWT,
     redirect: Redirect,
+    validateRedirect?: (url: string) => string,
 
     // Despite related to request context, the lib is stateless. So, they are here.
     cookie: CookieConfig,
     header: HeaderConfig,
     session?: SessionConfig,
     request: Partial<Pick<Request, "method" | "json">>
-    & { originURL: string }
+    & { originURL: string },
+    
   }
 
 

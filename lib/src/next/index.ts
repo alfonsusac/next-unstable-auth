@@ -27,6 +27,7 @@ export type NuAuthConfig<
     cookieName?: string,
     issuer?: string,
   }
+  redirect?: (url: string) => string
 }
 
 
@@ -43,7 +44,7 @@ export function NuAuth<
     = config.secret
     ?? process.env[nuAuthSecretEnvKey]
   if (!secret)
-    throw new Error(`Secret is required. Please provide a secret in the config or set the ${nuAuthSecretEnvKey} environment variable`)
+    throw new Error(`Secret is required. Please provide a secret in the config or set the ${ nuAuthSecretEnvKey } environment variable`)
 
   const authURL
     = config.authURL
@@ -60,10 +61,9 @@ export function NuAuth<
     const
       cookie = await cookies(),
       header = await headers(),
-      referer = header.get('referer')
-    const origin = header.get('origin')
-    
-    
+      referer = header.get('referer'),
+      origin = header.get('x-forwarded-proto') + '://' + header.get('host')
+
     return AuthCore({
       secret,
       authURL: authURL ?? 'https://localhost:3000/auth' as URLString,
@@ -105,12 +105,16 @@ export function NuAuth<
       redirect: (...params) => {
         return redirect(params[0])
       },
+      validateRedirect: (url: string) => {
+        if (!isPath(url))
+          return '/'
+        return url
+      },
       request: {
         json: request?.json,
         method: request?.method,
-        originURL: request?.url ?? ''
+        originURL: referer ?? request?.url ?? origin
       },
-      // authURL: config.baseUrl ?? process.env.NU_AUTH_BASE_URL ?? '',
     })
   }
 
@@ -124,7 +128,7 @@ export function NuAuth<
     = async (request: NextRequest) => {
       const $ = await auth(request)
       try {
-        
+
         const data = await $.requestHandler()
         return NextResponse.json(data)
 

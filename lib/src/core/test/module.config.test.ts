@@ -23,6 +23,7 @@ describe('Module: Config', () => {
       jwt: mockJwt,
       header: mockHeader,
       redirect: mockRedirect,
+      validateRedirect: (url: string) => url,
     })
     expect(auth).toBeDefined()
     expect(auth).toBeTypeOf("object")
@@ -53,6 +54,7 @@ describe('Module: Config', () => {
     jwt: mockJwt,
     header: mockHeader,
     redirect: mockRedirect,
+    validateRedirect: (url: string) => url,
   }
 
   const scenarios = [
@@ -84,6 +86,7 @@ describe('Module: Config', () => {
     { key: "toToken", value: {}, expectedError: "Config.ToToken must be a function" },
     { key: "toSession", value: {}, expectedError: "Config.ToSession must be a function" },
     { key: "validate", value: {}, expectedError: "Config.Validate must be a function" },
+    { key: "validateRedirect", value: {}, expectedError: "Config.ValidateRedirect must be a function" },
   ]
 
   scenarios.forEach((scene) => {

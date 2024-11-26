@@ -34,7 +34,7 @@ export async function getSession<
 
     if (expired) {
       updatedInternalData
-        = await provider.authorize(token.internal, $.requestContext)
+        = await provider.authorize(token.internal, $.requestCtx)
       updated
         = true
     }

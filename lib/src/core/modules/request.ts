@@ -25,6 +25,14 @@ export function getRequestContext($: {
     },
     method = () => req().method,
     originUrl = () => new URL(req().originURL),
+    getRedirectURL = (url: string | undefined) => {
+      const isProxied = originUrl().origin !== authURL.origin
+      if (isProxied) {
+        return new URL(url ?? '', originUrl()).toString()
+      } else {
+        return url ?? originUrl().pathname
+      }
+    },
     pathname = () => originUrl().pathname.split(authPath)[1].split('?')[0],
     segments = () => pathname().split('/').filter(Boolean),
     isRoute = (route: AuthRoutes) => {
@@ -60,6 +68,7 @@ export function getRequestContext($: {
     body,
     method,
     originUrl,
+    getRedirectURL,
   }
 }
 

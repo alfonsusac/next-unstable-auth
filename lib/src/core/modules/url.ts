@@ -51,6 +51,12 @@ export function isPath(o: unknown): o is AbsolutePath {
 }
 
 
+export function isSameOrigin(url1: string | URL, url2: string | URL) {
+  const u1 = new URL(url1)
+  const u2 = new URL(url2)
+  return u1.origin === u2.origin
+}
+
 /**
  * Retrieve the origin URL from the request headers.
  */

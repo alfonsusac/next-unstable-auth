@@ -5,7 +5,7 @@ import { mockCookie, mockHeader } from "./module.cookie.test"
 import { mockJwt } from "./module.jwt.test"
 import { testSignInMethod } from "./helper"
 import { mockRedirect } from "./module.config.test"
-import type { URLString } from "../modules/url"
+import type { AbsolutePath, URLString } from "../modules/url"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // Mocks
@@ -17,7 +17,6 @@ export const testCredentials = vi.fn()
 export const testInternal = vi.fn()
 
 const mockProviders = {
-
   noDefaultUser: {
     config: Provider({
       authenticate: async ($) => {
@@ -90,6 +89,7 @@ export const sharedSettings = {
     p1: mockProviders.generalCase.config,
     p2: mockProviders.generalCaseWithFields.config,
   },
+  validateRedirect: (url: string) => url,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -228,25 +228,123 @@ describe('Module: Core', () => {
     )
   })
 
-  describe('URLs', () => {
+  const providerWithMockRedirect = Provider({
+    authenticate: async ($) => {
+      testCallbackURI($.callbackURI)
+      return ({ data: { [defaultUser]: { id: "1" } }, internal: {} })
+    },
+    authorize: async () => ({ update: false }),
+  })
+
+  describe('callback URLs', () => {
     it('should return correct callback URL', async () => {
       const auth = AuthCore({
         ...sharedSettings,
         authURL: mockAuthURL,
         providers: {
-          p1: Provider({
-            authenticate: async ($) => {
-              mockRedirect($.callbackURI)
-              return ({ data: { id: "1" }, internal: {} })
-            },
-            authorize: async () => ({ update: false }),
-          }),
+          p1: providerWithMockRedirect,
         }
       })
       try {
         await auth.signIn("p1", undefined)
       } catch (error) { }
-      expect(mockRedirect).toBeCalledWith(`${ mockAuthURL }/callback/p1`)
+      expect(testCallbackURI).toBeCalledWith(`${ mockAuthURL }/callback/p1`)
+    })
+  })
+
+  // ------------------------------------------
+  // REDIRECT URL
+
+  describe('redirect URL', () => {
+
+    const signInAuth = async (
+      originURL: string,
+      validateRedirect: ((url: string) => string) | undefined,
+      redirectTo: URLString | AbsolutePath | undefined,
+    ) => await AuthCore({
+      ...sharedSettings,
+      authURL: mockAuthURL,
+      providers: { p1: providerWithMockRedirect },
+      request: { originURL },
+      validateRedirect,
+    }).signIn("p1", undefined, { redirectTo })
+
+    describe('default validateRedirect', () => {
+      describe('request have same origin', () => {
+        const sameOriginCurrentURL = "https://www.acme.com/dashboard"
+        describe('no redirect', () => {
+          it('should call cookie.set with /', async () => {
+            await signInAuth(sameOriginCurrentURL, undefined, undefined)
+            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/dashboard', expect.anything())
+          })
+          it('should not call redirect', async () => {
+            await signInAuth(sameOriginCurrentURL, undefined, undefined)
+            expect(mockRedirect).not.toBeCalled()
+          })
+        })
+        describe('redirect with path', () => {
+          it('should call cookie.set with path', async () => {
+            await signInAuth(sameOriginCurrentURL, undefined, '/a')
+            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/a', expect.anything())
+          })
+          it('should call redirect', async () => {
+            await signInAuth(sameOriginCurrentURL, undefined, '/a')
+            expect(mockRedirect).toBeCalledWith('/a')
+          })
+        })
+        describe('redirect with URL', () => {
+          describe('same origin', () => {
+            it('should call cookie.set with URL', async () => {
+              await signInAuth(sameOriginCurrentURL, undefined, 'https://www.acme.com/aaaa')
+              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaa', expect.anything())
+            })
+            it('should call redirect', async () => {
+              await signInAuth(sameOriginCurrentURL, undefined, 'https://www.acme.com/aaaa')
+              expect(mockRedirect).toBeCalledWith('https://www.acme.com/aaaa')
+            })
+          })
+          describe('different origin', () => {
+            it('should throw error', async () => {
+              await expect(signInAuth(sameOriginCurrentURL, undefined, 'https://www.abcd.com/aaaa')).rejects.toThrow("Redirect origin URL (https://www.abcd.com/aaaa)")
+            })
+          })
+        })
+      })
+      describe('request have different origin', () => {
+        const nonBaseOriginCurrentURL = "https://feature.acme.com/dashboard"
+        describe('no redirect', () => {
+          it('should throw error', async () => {
+            await expect(signInAuth(nonBaseOriginCurrentURL, undefined, undefined)).rejects.toThrow()
+          })
+        })
+        describe('redirect with path', () => {
+          it('should throw error', async () => {
+            await expect(signInAuth(nonBaseOriginCurrentURL, undefined, '/a')).rejects.toThrow()
+          })
+        })
+        describe('redirect with URL', () => {
+          describe('same origin as request origin', () => {
+            it('should throw error', async () => {
+              await expect(signInAuth(nonBaseOriginCurrentURL, undefined, 'https://feature.acme.com/aaaa')).rejects.toThrow("Redirect origin URL (https://feature.acme.com/aaaa)")
+            })
+          })
+          describe('different origin than request origin', () => {
+            it('should throw error', async () => {
+              await expect(signInAuth(nonBaseOriginCurrentURL, undefined, 'https://asdf.acme.com/aaaaayay')).rejects.toThrow("Redirect origin URL (https://asdf.acme.com/aaaaayay)")
+            })
+          })
+          describe('same origin as auth origin', () => {
+            it('should call cookie.set with redirect url', async () => {
+              await signInAuth(nonBaseOriginCurrentURL, undefined, 'https://www.acme.com/aaaaayay')
+              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaaayay', expect.anything())
+            })
+            it('should call redirect to redirect url', async () => {
+              await signInAuth(nonBaseOriginCurrentURL, undefined, 'https://www.acme.com/aaaaayay')
+              expect(mockRedirect).toBeCalledWith('https://www.acme.com/aaaaayay')
+            })
+          })
+        })
+      })
     })
   })
 })

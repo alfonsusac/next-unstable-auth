@@ -21,96 +21,86 @@ export function AuthCore<
   T = DefaultT<P>,
   S = T,
 >(config: Config<P, T, S>) {
-
-  const $ = init(config)
-
-  const signIn
-    = async <ID extends keyof P>
-      (
-        id:
-          ID extends string ? ID : never,
-        credentials:
-          string extends ID ? (object | undefined) : ProviderFields<P[ID]>,
-        options?:
-          SignInOptions,
-      ) => {
-      return base.signIn(
-        $,
-        id,
-        credentials,
-        options?.redirectTo,
-      )
-    }
-
-  const callback
-    = async () => base.callback($)
-  const signOut
-    = async () => base.signOut($)
-  const getSession
-    = async () => base.getSession($)
-
-  const getProvider = <ID extends keyof P>(id: ID extends string ? ID : never) => {
-    return $.getProvider(id)
-  }
-
-  const createCSRF
-    = () => base.createCSRF($)
-  const checkCSRF
-    = () => base.checkCSRF($)
-
-  const requestHandler
-    = async () => {
-      const isRoute = $.requestContext.isRoute
-
-      if (isRoute('POST /sign-in')) {
-        checkCSRF()
-        const id
-          = $.requestContext.segments()[1]
-
-        const provider
-          = $.getProvider(id)
-
-        if (!provider)
-          throw new ParameterError('Provider not found')
-
-        const body
-          = await $.requestContext.body()
-
-        const data
-          = validateSignInBody(body)
-
-        const credentials
-          = provider.hasFields ? data.param_0 : undefined
-
-        const signInOption
-          = provider.hasFields ? data.param_1 : data.param_0
-
-        return signIn(
+  const
+    $ = init(config),
+    signIn
+      = async <ID extends keyof P>
+        (
+          id:
+            ID extends string ? ID : never,
+          credentials:
+            string extends ID ? (object | undefined) : ProviderFields<P[ID]>,
+          options?:
+            SignInOptions,
+        ) => {
+        return base.signIn(
+          $,
           id,
           credentials,
-          signInOption,
+          options?.redirectTo,
         )
+      },
+    callback = async () => base.callback($),
+    signOut = async () => base.signOut($),
+    getSession = async () => base.getSession($),
+    getProvider
+      = <ID extends keyof P>(id: ID extends string ? ID : never) => {
+        return $.getProvider(id)
+      },
+    createCSRF = () => base.createCSRF($),
+    checkCSRF = () => base.checkCSRF($),
+    requestHandler
+      = async () => {
+        const isRoute = $.requestCtx.isRoute
+        if (isRoute('POST /sign-in')) {
+          checkCSRF()
+          const id
+            = $.requestCtx.segments()[1]
+
+          const provider
+            = $.getProvider(id)
+
+          if (!provider)
+            throw new ParameterError('Provider not found')
+
+          const body
+            = await $.requestCtx.body()
+
+          const data
+            = validateSignInBody(body)
+
+          const credentials
+            = provider.hasFields ? data.param_0 : undefined
+
+          const signInOption
+            = provider.hasFields ? data.param_1 : data.param_0
+
+          return signIn(
+            id,
+            credentials,
+            signInOption,
+          )
+        }
+        if (isRoute('POST /sign-out')) {
+          checkCSRF()
+          return signOut()
+        }
+        if (isRoute('GET /callback')) {
+          return callback()
+        }
+        if (isRoute('GET /session')) {
+          checkCSRF()
+          return getSession()
+        }
+        if (isRoute('GET /provider')) {
+          const id = $.requestCtx.segments()[1]
+          return getProvider(id)
+        }
+        if (isRoute('GET /csrf')) {
+          return createCSRF()
+        }
+        return { message: "Auth Powered by NuAuth - Licensed under MIT - @alfonsusac" }
       }
-      if (isRoute('POST /sign-out')) {
-        checkCSRF()
-        return signOut()
-      }
-      if (isRoute('GET /callback')) {
-        return callback()
-      }
-      if (isRoute('GET /session')) {
-        checkCSRF()
-        return getSession()
-      }
-      if (isRoute('GET /provider')) {
-        const id = $.requestContext.segments()[1]
-        return getProvider(id)
-      }
-      if (isRoute('GET /csrf')) {
-        return createCSRF()
-      }
-      return { message: "Auth Powered by NuAuth - Licensed under MIT - @alfonsusac" }
-    }
 
   return {
     config,

@@ -7,7 +7,7 @@ import { ProviderHandler, Providers, validateProviderId as _validateProviderId }
 import { validateRedirectTo } from "./modules/redirect"
 import { getRequestContext } from "./modules/request"
 import { SessionHandler, validateSessionConfig } from "./modules/session"
-import { validateURL } from "./modules/url"
+import { isPath, isSameOrigin, validateURL } from "./modules/url"
 import { isFunction, isNumber, isObject, isString } from "./modules/validation"
 
 
@@ -53,10 +53,22 @@ export function init<
 
 
   // # Redirect
-  const redirect = cfg.redirect
-  if (!isFunction(redirect))
+  const redirectFn = cfg.redirect
+  if (!isFunction(redirectFn))
     throw new Error('Config.Redirect must be a function')
 
+  const validateRedirect = cfg.validateRedirect ?? ((url: string) => {
+    if (isPath(url)) return url
+    if (isSameOrigin(url, authURL)) return url
+    throw new Error(`Redirect origin URL (${ url }) is different from the configured auth URL (${ authURL }). If this is intended, please provide a custom ValidateRedirect function. \n `)
+  })
+  if (!isFunction(validateRedirect))
+    throw new Error('Config.ValidateRedirect must be a function')
+
+  const redirect = (url: string) => {
+    const validated = validateRedirect(url)
+    return redirectFn(validated)
+  }
 
   // # JWT
   const jwtConfig = cfg.jwt
@@ -148,14 +160,14 @@ export function init<
       )
     }
 
-  const requestContext = getRequestContext({
+  const requestCtx = getRequestContext({
     request, authURL, cookie, header, redirect
   })
 
   return {
     expiry, authURL, csrfStore, sessionStore, redirectStore,
     toToken, validate, toSession, getProvider, redirect,
-    requestContext,
+    requestCtx, validateRedirect,
   }
 }
 
@@ -171,4 +183,4 @@ export type AuthContext<
 
 
 export type RequestContext
-  = AuthContext<any, any, any>['requestContext']
+  = AuthContext<any, any, any>['requestCtx']

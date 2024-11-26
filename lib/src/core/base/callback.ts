@@ -4,7 +4,7 @@ export async function callback(
   $: AuthContext,
 ) {
   const provider
-    = $.getProvider($.requestContext.segments()[1])
+    = $.getProvider($.requestCtx.segments()[1])
 
   const redirectTo
     = $.redirectStore.use()
@@ -12,7 +12,7 @@ export async function callback(
   const { data, internal }
     = await provider.authenticate({
       credentials: undefined,
-      requestContext: $.requestContext,
+      requestContext: $.requestCtx,
     })
 
   const rtoken
