@@ -3,11 +3,11 @@ import { AuthCore } from "../core";
 import { DefaultT, ToSession, ToToken, ValidateToken } from "../core/modules/config";
 import { Providers } from "../core/modules/providers";
 import { jwt } from "../util/jwt";
-import { ConfigError, ParameterError } from "../core/modules/error";
+import { ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect } from "next/navigation";
-import { isPath, type URLString } from "../core/modules/url";
+import { isPath, validateURL, type URLString } from "../core/modules/url";
 import { parseNumber } from "../util/parse";
 import { nuAuthBaseUrlEnvKey, nuAuthSecretEnvKey } from "./env-keys";
 
@@ -40,19 +40,22 @@ export function NuAuth<
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Defaults
 
-  const secret
-    = config.secret
-    ?? process.env[nuAuthSecretEnvKey]
+  const
+    secret
+      = config.secret
+      ?? process.env[nuAuthSecretEnvKey]
+
   if (!secret)
     throw new Error(`Secret is required. Please provide a secret in the config or set the ${ nuAuthSecretEnvKey } environment variable`)
 
-  const authURL
-    = config.authURL
-    ?? process.env[nuAuthBaseUrlEnvKey] as URLString
-
-  const expiry
-    = config.expiry
-    ?? parseNumber(process.env.NU_AUTH_EXPIRY, 60 * 60 * 24 * 7) // default to 1 week
+  const
+    authURL
+      = config.authURL
+      ?? process.env[nuAuthBaseUrlEnvKey] as URLString
+      ?? 'http://localhost:3000/auth' as URLString,
+    expiry
+      = config.expiry
+      ?? parseNumber(process.env.NU_AUTH_EXPIRY, 60 * 60 * 24 * 7) // default to 1 week
 
   // - - - - - - - - - - - - - - - - - - - - - - -
   // Get Base Auth
@@ -62,11 +65,19 @@ export function NuAuth<
       cookie = await cookies(),
       header = await headers(),
       referer = header.get('referer'),
-      origin = header.get('x-forwarded-proto') + '://' + header.get('host')
+      forwardedProto = header.get('x-forwarded-proto'),
+      forwardedHost = header.get('x-forwarded-host'),
+      origin = forwardedProto + '://' + forwardedHost
+
+    try {
+      validateURL(origin, "Origin URL")
+    } catch (error) {
+      throw new Error(`Invalid Origin URL inferred from the header. Origin must be defined in x-forwarded-proto for redirection purposes. Received proto: "${ forwardedProto }" and host "${ forwardedHost }". Error: ${ error instanceof Error ? error.message : error }`)
+    }
 
     return AuthCore({
       secret,
-      authURL: authURL ?? 'https://localhost:3000/auth' as URLString,
+      authURL,
       expiry,
       providers: config.providers,
       toToken: config.toToken,
@@ -161,16 +172,14 @@ export function NuAuth<
       Session: undefined as S,
       Providers: undefined as unknown as P,
       Config: undefined as unknown as NuAuthConfig<P, T, S>,
-    }
+    },
+    context: auth
   }
 }
 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - 
 // Error Messages
-
-const requiredSecret = 'Secret is required. Please provide a secret in the config or set the NU_AUTH_SECRET environment variable'
-
 
 // const auth = NuAuth({
 //   apiRoute: '/auth',

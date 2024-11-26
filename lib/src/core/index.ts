@@ -115,7 +115,8 @@ export function AuthCore<
       Token: undefined as T,
       Session: undefined as S,
       Config: undefined as unknown as Config<P, T, S>,
-    }
+    },
+    authContext: $,
   }
 }
 

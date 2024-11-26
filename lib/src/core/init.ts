@@ -60,6 +60,7 @@ export function init<
   const validateRedirect = cfg.validateRedirect ?? ((url: string) => {
     if (isPath(url)) return url
     if (isSameOrigin(url, authURL)) return url
+    if (url.includes(new URL(authURL).origin)) return url
     throw new Error(`Redirect origin URL (${ url }) is different from the configured auth URL (${ authURL }). If this is intended, please provide a custom ValidateRedirect function. \n `)
   })
   if (!isFunction(validateRedirect))

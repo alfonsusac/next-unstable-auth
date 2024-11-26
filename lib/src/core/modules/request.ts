@@ -2,14 +2,25 @@ import { AuthRoutes } from "../base/routes";
 import { Config } from "./config";
 import { CookieConfig } from "./cookie";
 import { ConfigError, ParameterError } from "./error";
-import { HeaderHandler } from "./header";
+import { HeaderHandler, type HeaderConfig } from "./header";
 import { Redirect } from "./redirect";
+import type { SessionConfig } from "./session";
 import { URLString } from "./url";
 import { isString } from "./validation";
 
 
+export type RequestContextInput = {
+  cookie: CookieConfig,
+  header: HeaderConfig,
+  session?: SessionConfig,
+  request: Partial<Pick<Request, "method" | "json">>
+  & { originURL: string },
+}
+
+
+
 export function getRequestContext($: {
-  request: Config<any, any, any>['request'],
+  request: RequestContextInput['request'],
   authURL: URLString,
   cookie: CookieConfig,
   header: HeaderHandler,

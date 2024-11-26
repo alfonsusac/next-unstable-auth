@@ -1,4 +1,98 @@
 import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
+import { NuAuth } from '../next'
+
+
+vi.mock('next/headers', () => ({
+  cookies: async () => {
+    return {
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn()
+    }
+  },
+  headers: async () => {
+    return {
+      get: vi.fn((name: string) => {
+        if (name === "x-forwarded-proto") return 'http'
+        if (name === "x-forwarded-host") return 'localhost:3000'
+        if (name === "referer") return 'http://localhost:3000'
+        console.log(name)
+        return "ASD"
+      }),
+      set: vi.fn((name: string, value: string) => { }),
+      clear: vi.fn((name: string) => { })
+    }
+  }
+}))
+
+describe('NextJS Layer', () => {
+  // beforeEach(() => {
+  //   vi.resetAllMocks()
+  // })
+
+  describe('Configuration', () => {
+
+    describe('Secret', () => {
+      describe('is not provided', () => {
+        it('should throw error', () => {
+          expect(() => NuAuth({ providers: {} })).toThrowError('Secret is required')
+        })
+      })
+      describe('provided by config', () => {
+        it('should not throw error', () => {
+          expect(() => NuAuth({ secret: '123', providers: {} })).not.toThrowError()
+        })
+      })
+      describe('provided by environment vairable', () => {
+        it('should not throw error', () => {
+          vi.stubEnv('NU_AUTH_SECRET', '123')
+          expect(() => NuAuth({ providers: {} })).not.toThrowError()
+        })
+      })
+    })
+    describe('API URL', () => {
+      describe('is not provided', () => {
+        it('should be set to /auth by default', async () => {
+          const authURL = (await NuAuth({ providers: {} }).context()).config.authURL
+          expect(authURL).toEqual('http://localhost:3000/auth')
+        })
+      })
+      describe('provided by config', () => {
+        it('should be set to the provided value', async () => {
+          const authURL = (await NuAuth({ authURL: 'http://localhost:4000/auth', providers: {} }).context()).config.authURL
+          expect(authURL).toEqual('http://localhost:4000/auth')
+        })
+        it('should throw error if invalid', () => {
+          expect(() => NuAuth({ authURL: '://localhost:3000', providers: {} })).toThrowError('Invalid URL')
+        })
+      })
+      describe('provided by environment variable', () => {
+
+      })
+    })
+  })
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // // Mock 
 // // ------------------------------------------------------------------------
@@ -190,10 +284,10 @@ import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
 // })
 
 
-describe('auth using client functions', () => {
+// describe('auth using client functions', () => {
 
-  it('passwordless, no redirect', () => {
-    expect(true).toBe(true)
-  })
+//   it('passwordless, no redirect', () => {
+//     expect(true).toBe(true)
+//   })
 
-})
+// })
