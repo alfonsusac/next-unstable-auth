@@ -67,7 +67,7 @@ export class OneTimeCookieStore {
     this.cookieStore = new CookieStore(cookie, name, options)
   }
   set(value: string) {
-    if (this.validate?.(value))
+    if (this.validate?.(value) ?? true)
       this.cookieStore.set(value)
   }
   use() {

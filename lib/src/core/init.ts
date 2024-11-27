@@ -106,12 +106,12 @@ export function init<
   )
   const redirectStore = new OneTimeCookieStore(
     cookie, "nu-redirect",
-    { secure: true, httpOnly: true },
+    { secure: true, sameSite:'lax', httpOnly: true },
     validateRedirectTo
   )
   const csrfStore = new OneTimeCookieStore(
     cookie, "nu-csrf",
-    { secure: true, httpOnly: true },
+    { secure: true, sameSite: 'lax', httpOnly: true },
   )
 
   // # Request Context

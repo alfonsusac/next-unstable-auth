@@ -6,6 +6,7 @@ import { mockJwt } from "./module.jwt.test"
 import { testSignInMethod } from "./helper"
 import { mockRedirect } from "./module.config.test"
 import type { AbsolutePath, URLString } from "../modules/url"
+import { nowInSeconds } from "../modules/jwt"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // Mocks
@@ -16,7 +17,7 @@ export const testCallbackURI = vi.fn()
 export const testCredentials = vi.fn()
 export const testInternal = vi.fn()
 
-
+export const secureHttpOnlyLaxCookieOption = { httpOnly: true, sameSite: 'lax', secure: true }
 
 export const mockAuthURL = "https://www.acme.com/ayyopath/auth" as URLString
 export const mockOriginURL = "https://feature-branch.acme.com"
@@ -28,9 +29,12 @@ export const sharedSettings = {
   header: mockHeader,
   jwt: mockJwt,
   redirect: mockRedirect,
-  secret: '123',
+  secret: 'Secret123',
   request: {
     originURL: mockOriginURL,
+  },
+  providers: {
+    p1: Provider({ authenticate: async () => ({ data: { [defaultUser]: { id: "sharedProviderTestID" } }, internal: {} }) })
   },
   validateRedirect: (url: string) => url,
 }
@@ -214,7 +218,6 @@ describe('Module: Core', () => {
               testCallbackURI($.callbackURI)
               return ({ data: { [defaultUser]: { id: "1" } }, internal: {} })
             },
-            authorize: async () => ({ update: false }),
           })
         }
       })
@@ -243,7 +246,7 @@ describe('Module: Core', () => {
         describe('no redirect', () => {
           it('should call cookie.set with /', async () => {
             await signInAuth(sameOriginCurrentURL, undefined, undefined)
-            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/dashboard', expect.anything())
+            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/dashboard', secureHttpOnlyLaxCookieOption)
           })
           it('should not call redirect', async () => {
             await signInAuth(sameOriginCurrentURL, undefined, undefined)
@@ -253,7 +256,7 @@ describe('Module: Core', () => {
         describe('redirect with path', () => {
           it('should call cookie.set with path', async () => {
             await signInAuth(sameOriginCurrentURL, undefined, '/a')
-            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/a', expect.anything())
+            expect(mockCookie.set).toBeCalledWith('nu-redirect', '/a', secureHttpOnlyLaxCookieOption)
           })
           it('should call redirect', async () => {
             await signInAuth(sameOriginCurrentURL, undefined, '/a')
@@ -264,7 +267,7 @@ describe('Module: Core', () => {
           describe('same origin', () => {
             it('should call cookie.set with URL', async () => {
               await signInAuth(sameOriginCurrentURL, undefined, 'https://www.acme.com/aaaa')
-              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaa', expect.anything())
+              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaa', secureHttpOnlyLaxCookieOption)
             })
             it('should call redirect', async () => {
               await signInAuth(sameOriginCurrentURL, undefined, 'https://www.acme.com/aaaa')
@@ -304,7 +307,7 @@ describe('Module: Core', () => {
           describe('same origin as auth origin', () => {
             it('should call cookie.set with redirect url', async () => {
               await signInAuth(nonBaseOriginCurrentURL, undefined, 'https://www.acme.com/aaaaayay')
-              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaaayay', expect.anything())
+              expect(mockCookie.set).toBeCalledWith('nu-redirect', 'https://www.acme.com/aaaaayay', secureHttpOnlyLaxCookieOption)
             })
             it('should call redirect to redirect url', async () => {
               await signInAuth(nonBaseOriginCurrentURL, undefined, 'https://www.acme.com/aaaaayay')
@@ -335,7 +338,139 @@ describe('Module: Core', () => {
   })
 
   describe('Sign Out', () => {
-    
+    it('should remove cookie', async () => {
+      await AuthCore(sharedSettings).signOut()
+      expect(mockCookie.delete).toBeCalledWith('nu-auth')
+    })
+  })
+
+  describe('Get Session', () => {
+    describe('no session', () => {
+      it('should return null', () => {
+        expect(AuthCore(sharedSettings).getSession()).resolves.toEqual(null)
+      })
+    })
+    describe('valid session', () => {
+      it('should return session', async () => {
+        mockCookie.get.mockReturnValue("Mocked")
+        mockJwt.verify.mockReturnValue({ t: { id: "ValidSessionProviderIDTest" }, p: "p1", i: {}, e: nowInSeconds() + 500, iat: nowInSeconds(), iss: "nu-auth" })
+        const session = await AuthCore({
+          ...sharedSettings,
+        }).getSession()
+        expect(session).toEqual({ id: "ValidSessionProviderIDTest" })
+      })
+    })
+    describe('invalid session', () => {
+      it('should return null', async () => {
+        mockCookie.get.mockReturnValue("Mocked")
+        mockJwt.verify.mockReturnValue({ t: { id: "InvalidSessionProviderIDTest" }, p: "p1", i: {}, e: nowInSeconds() + 500, iat: nowInSeconds(), iss: "invalidIssuer" })
+        const session = await AuthCore(sharedSettings).getSession()
+        expect(session).toEqual(null)
+      })
+    })
+    describe('expired session', () => {
+      const
+        mockJWTReturnValue
+          = (
+            id: string,
+            internal: object
+          ) => mockJwt.verify.mockReturnValue({ t: { id }, p: "p1", i: internal, e: 20, iat: 10, iss: "nu-auth" }),
+        mockCookieReturnValue
+          = () => mockCookie.get.mockReturnValue("Mocked"),
+        mockIfAuthorizedIsCalled
+          = vi.fn(),
+        mockAuthCore = (authorize: Function) => AuthCore({
+          ...sharedSettings, providers: {
+            p1: Provider({
+              authenticate: async () => ({} as any),
+              authorize: authorize as any
+            })
+          }
+        })
+
+      describe('authorize method', () => {
+        beforeEach(() => {
+          mockCookieReturnValue()
+        })
+        it('should trigger the providers authorize method', async () => {
+          mockJWTReturnValue('expiredSessionProviderIDTest', {})
+          await mockAuthCore(async () => {
+            mockIfAuthorizedIsCalled(true)
+            return ({ update: false })
+          }).getSession()
+          expect(mockIfAuthorizedIsCalled).toBeCalledWith(true)
+        })
+        it('should receive internal data', async () => {
+          mockJWTReturnValue('expiredSessionProviderIDTest', { hello: "world" })
+          await mockAuthCore(async (data: any) => {
+            mockIfAuthorizedIsCalled(data)
+            return ({ update: false })
+          }).getSession()
+          expect(mockIfAuthorizedIsCalled).toBeCalledWith({ hello: "world" })
+        })
+        describe('returns update:true', () => {
+          let session: any
+          beforeEach(async () => {
+            mockCookieReturnValue()
+            mockJWTReturnValue('expiredSessionProviderIDTest', { hello: "world" })
+            session = await mockAuthCore(async (data: any) => ({ update: true, newInternal: { hello: "bar" } })).getSession()
+          })
+          it('should call cookie.set', async () => expect(mockCookie.set).toBeCalledWith("nu-auth", "MockedJWT", { httpOnly: true, sameSite: "lax", secure: true }))
+          it('should call jwt.sign', () => expect(mockJwt.sign).toBeCalledWith({ e: nowInSeconds() + sharedSettings.expiry, i: { hello: "bar" }, iat: nowInSeconds(), iss: "nu-auth", p: "p1", t: { id: "expiredSessionProviderIDTest" } }, "Secret123"))
+          it('should return new session', () => expect(session).toEqual({ id: "expiredSessionProviderIDTest" }))
+        })
+        describe('returns update:false', () => {
+          let session: any
+          beforeEach(async () => {
+            mockCookieReturnValue()
+            mockJWTReturnValue('expiredSessionProviderIDTest', { hello: "world" })
+            session = await mockAuthCore(async (data: any) => ({ update: false })).getSession()
+          })
+          it('should not call cookie.set', async () => expect(mockCookie.set).not.toBeCalled())
+          it('should not call jwt.sign', async () => expect(mockJwt.sign).not.toBeCalled())
+          it('should return null session', () => expect(session).toBeNull())
+        })
+      })
+    })
+  })
+
+  describe('CSRF', () => {
+    describe('createCSRF', () => {
+      let csrf: any
+      beforeEach(async () => csrf = await AuthCore({ ...sharedSettings, request: { method: 'GET', url: mockAuthURL + '/csrf', originURL: mockAuthURL + '/csrf' } }).requestHandler())
+      it('should call cookie.set', async () => expect(mockCookie.set).toBeCalledWith('nu-csrf', expect.any(String), secureHttpOnlyLaxCookieOption))
+      it('should return csrf', async () => expect(csrf).toEqual(expect.any(String)))
+    })
+    describe('checkCSRF', () => {
+      describe('valid csrf', () => {
+        beforeEach(() => {
+          mockHeader.get.mockReturnValue("mockedCSRF123")
+          mockCookie.get.mockReturnValue("mockedCSRF123")
+        })
+        it('should not throw error', async () => await expect(AuthCore(sharedSettings).checkCSRF()).resolves.not.toThrow())
+      })
+      describe('invalid csrf - mismatched value', () => {
+        beforeEach(() => {
+          mockHeader.get.mockReturnValue("mockedCSRF123")
+          mockCookie.get.mockReturnValue("mockedCSRF321")
+        })
+        it('should throw error', async () => await expect(AuthCore({ ...sharedSettings }).checkCSRF()).rejects.toThrow('CSRF Token is invalid'))
+      })
+      describe('invalid csrf - missing header', () => {
+        beforeEach(() => {
+          mockCookie.get.mockReturnValue("mockedCSRF123")
+          mockHeader.get.mockReturnValue(null)
+        })
+        it('should throw error', async () => await expect(AuthCore({ ...sharedSettings }).checkCSRF()).rejects.toThrow('CSRF Token is invalid'))
+      })
+      describe('invalid csrf - missing cookie', () => {
+        beforeEach(() => {
+          mockHeader.get.mockReturnValue("mockedCSRF123")
+          mockCookie.get.mockReturnValue(null)
+        })
+        it('should throw error', async () => await expect(AuthCore({ ...sharedSettings }).checkCSRF()).rejects.toThrow('CSRF Token is invalid'))
+      })
+    })
   })
 
 })

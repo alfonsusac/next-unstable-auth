@@ -34,7 +34,7 @@ export type Config<
     session?: SessionConfig,
     request: Partial<Pick<Request, "method" | "json" | "url">>
     & { originURL: string },
-    
+
   }
 
 

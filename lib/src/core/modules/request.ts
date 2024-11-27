@@ -41,7 +41,13 @@ export function getRequestContext($: {
       return new URL(request.url)
     },
     method = () => req().method,
-    originUrl = () => new URL(req().originURL),
+    // validate originURL here instead of in the config
+    originUrl = () => {
+      const origin = req().originURL
+      if (!origin)
+        throw new ConfigError('This operation requires an origin URL')
+      return new URL(origin)
+    },
     getRedirectURL = (url: string | undefined) => {
       const isProxied = originUrl().origin !== authURL.origin
       if (isProxied) {

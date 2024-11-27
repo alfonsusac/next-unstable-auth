@@ -22,12 +22,9 @@ export function AuthCore<
     signIn
       = async <ID extends keyof P>
         (
-          id:
-            ID extends string ? ID : never,
-          credentials:
-            string extends ID ? (object | undefined) : ProviderFields<P[ID]>,
-          options?:
-            SignInOptions,
+          id: ID extends string ? ID : never,
+          credentials: string extends ID ? (object | undefined) : ProviderFields<P[ID]>,
+          options?: SignInOptions,
         ) => {
         return base.signIn(
           $,
@@ -48,6 +45,9 @@ export function AuthCore<
     requestHandler
       = async () => {
         const isRoute = $.requestCtx.isRoute
+        // TODO - remove this
+        console.log(config.request.originURL)
+        console.log("isRoute", isRoute('GET /csrf'))
         if (isRoute('POST /sign-in')) {
           checkCSRF()
           const id
@@ -106,6 +106,7 @@ export function AuthCore<
     getSession,
     getProvider,
     requestHandler,
+    checkCSRF,
     $Infer: {
       Providers: undefined as unknown as P,
       Token: undefined as T,

@@ -74,6 +74,7 @@ export type AuthorizeReturn<I>
     newInternal: I
   } | {
     update: false
+    newInternal?: undefined
   }
 
 export type AuthorizeParameter<I>

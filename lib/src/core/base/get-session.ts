@@ -2,8 +2,6 @@ import { AuthContext } from "../init";
 import { DefaultT } from "../modules/config";
 import { Providers } from "../modules/providers";
 
-
-
 export async function getSession<
   P extends Providers,
   T = DefaultT<P>,
@@ -15,40 +13,46 @@ export async function getSession<
   try {
     const { token, expired }
       = $.sessionStore.get()
-    
+
+    console.log(token)
+
     if (!token)
       return null
 
-    const provider
-      = $.getProvider(token.providerId)
+    const
+      provider
+        = $.getProvider(token.providerId),
+      data
+        = $.validate(token.data) as Awaited<T>
 
-    const data
-      = $.validate(token.data) as Awaited<T>
-
-    let updated
-      = false
-    let updatedToken
-      = data
-    let updatedInternalData
-      = token.internal
+    let
+      updated
+        = false,
+      updatedToken
+        = data,
+      updatedInternalData
+        = token.internal
 
     if (expired) {
-      updatedInternalData
-        = await provider.authorize(token.internal, $.requestCtx)
-      updated
-        = true
+      const res = await provider.authorize(token.internal, $.requestCtx)
+      if (res?.update) {
+        updatedInternalData = res.newInternal
+        updated = true
+      } else {
+        throw Error(`Session expired, provider ${provider.id} } did not update`)
+      }
     }
 
-    const updateToken
-      = (newToken: Awaited<T>) => {
-        updatedToken
-          = newToken
-        updated
-          = true
-      }
-
-    const session
-      = await $.toSession(data, updateToken) ?? data
+    const
+      updateToken
+        = (newToken: Awaited<T>) => {
+          updatedToken
+            = newToken
+          updated
+            = true
+        },
+      session
+        = await $.toSession(data, updateToken) ?? data
 
     if (updated)
       $.sessionStore.set(
@@ -60,6 +64,7 @@ export async function getSession<
     return session
 
   } catch (error) {
+    // console.error(error)
     $.sessionStore.clear()
     return null
   }

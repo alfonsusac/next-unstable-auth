@@ -24,8 +24,8 @@ export class HeaderHandler {
   ) { }
   get(name: string) {
     const value = this.header.get(name)
-    if (value && (!isString(value) || !isNull(value)))
-      throw new Error("Invalid Header.get header value")
+    if (!isString(value) && !isNull(value))
+      throw new Error("Invalid Header.get header value. Received: " + value)
     return value
   }
   set(name: string, value: string) {

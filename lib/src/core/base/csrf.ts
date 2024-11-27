@@ -6,18 +6,21 @@ export function createCSRF(
   $: AuthContext,
 ) {
   const csrf = generateNonce()
+  console.log("Hello? A")
   $.csrfStore.set(csrf)
+  console.log("Hello? B")
   return csrf
 }
 
 export async function checkCSRF(
   $: AuthContext,
 ) {
-  const header = $.requestCtx.header
-  const cookie = $.requestCtx.cookie
-
-  const csrfHeader = header.get('x-csrf-token')
-  if (cookie.get('csrf') !== csrfHeader)
+  const
+    csrfHeader
+      = $.requestCtx.header.get('x-csrf-token')
+  if (!csrfHeader)
+    throw new CSRFError()
+  if (!$.csrfStore.verify(csrfHeader))
     throw new CSRFError()
 }
 
