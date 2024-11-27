@@ -28,7 +28,7 @@ export async function callback(
   )
 
   if (redirectTo)
-    $.redirect(redirectTo)
+    $.unsafeRedirect(redirectTo)
 
   return $.toSession?.(token)
 }

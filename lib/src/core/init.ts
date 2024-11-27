@@ -66,7 +66,9 @@ export function init<
   if (!isFunction(validateRedirect))
     throw new Error('Config.ValidateRedirect must be a function')
 
-  const redirect = (url: string) => {
+  const redirect = cfg.redirect
+
+  const unsafeRedirect = (url: string) => {
     const validated = validateRedirect(url)
     return redirectFn(validated)
   }
@@ -145,7 +147,7 @@ export function init<
       throw new Error(`Config.Providers.${ id } must be an object`)
     if (!isFunction(providers[id].authenticate))
       throw new Error(`Config.Providers.${ id }.Authenticate must be a function`)
-    if (!isFunction(providers[id].authorize))
+    if (providers[id].authorize && !isFunction(providers[id].authorize))
       throw new Error(`Config.Providers.${ id }.Authorize must be a function`)
     if (providers[id].fields && !isFunction(providers[id].fields))
       throw new Error(`Config.Providers.${ id }.Fields must be a function`)
@@ -167,7 +169,7 @@ export function init<
 
   return {
     expiry, authURL, csrfStore, sessionStore, redirectStore,
-    toToken, validate, toSession, getProvider, redirect,
+    toToken, validate, toSession, getProvider, redirect, unsafeRedirect,
     requestCtx, validateRedirect,
   }
 }

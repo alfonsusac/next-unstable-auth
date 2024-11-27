@@ -20,7 +20,7 @@ export type RequestContextInput = {
 
 
 export function getRequestContext($: {
-  request: RequestContextInput['request'],
+  request: Config['request'],
   authURL: URLString,
   cookie: CookieConfig,
   header: HeaderHandler,
@@ -34,6 +34,12 @@ export function getRequestContext($: {
         throw new ConfigError('This operation requires a request object')
       return $.request
     },
+    url = () => {
+      const request = req()
+      if (!request.url)
+        throw new ConfigError('This operation requires a URL object')
+      return new URL(request.url)
+    },
     method = () => req().method,
     originUrl = () => new URL(req().originURL),
     getRedirectURL = (url: string | undefined) => {
@@ -44,7 +50,7 @@ export function getRequestContext($: {
         return url ?? originUrl().pathname
       }
     },
-    pathname = () => originUrl().pathname.split(authPath)[1].split('?')[0],
+    pathname = () => url().pathname.split(authPath)[1].split('?')[0],
     segments = () => pathname().split('/').filter(Boolean),
     isRoute = (route: AuthRoutes) => {
       try {
@@ -57,7 +63,7 @@ export function getRequestContext($: {
         return false
       }
     },
-    searchParams = () => originUrl().searchParams,
+    searchParams = () => url().searchParams,
     body = async () => {
       const request = req()
       if (!request.json)

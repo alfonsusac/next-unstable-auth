@@ -12,10 +12,6 @@ import { validateSignInBody } from "./shared/validations";
 
 
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Core
-
-
 export function AuthCore<
   P extends Providers,
   T = DefaultT<P>,
@@ -122,10 +118,6 @@ export function AuthCore<
 
 
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Types
-
-
 
 export type AuthCore<
   P extends Providers,
@@ -133,69 +125,3 @@ export type AuthCore<
   S = T,
 >
   = ReturnType<typeof AuthCore<P, T, S>>
-
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Testing Playgound
-
-
-
-// const auth = AuthCore({
-//   expiry: 60 * 60 * 24 * 7,
-//   secret: 'my-secret',
-//   session: {
-//     cookieName: 'my-cookie',
-//     issuer: 'my-issuer',
-//   },
-//   providers: {
-//     provider: Provider({
-//       fields: () => {
-//         return {
-//           email: 'text',
-//           password: 'text'
-//         };
-//       },
-//       authenticate: async () => ({ data: {}, internal: {} }),
-//       authorize: async () => ({ update: false })
-//     })
-//   },
-//   authPath: "/auth",
-//   jwt: {
-//     sign: function (payload: any, secret: string): string {
-//       throw new Error("Function not implemented.");
-//     },
-//     verify: function (token: string, secret: string): unknown {
-//       throw new Error("Function not implemented.");
-//     }
-//   },
-//   cookie: {
-//     get: function (name: string): string | null {
-//       throw new Error("Function not implemented.");
-//     },
-//     set: function (name: string, value: string, options?: CookieOptions): void {
-//       throw new Error("Function not implemented.");
-//     },
-//     delete: function (name: string): void {
-//       throw new Error("Function not implemented.");
-//     }
-//   },
-//   header: {
-//     get: function (name: string): string | null {
-//       throw new Error("Function not implemented.");
-//     },
-//     set: function (name: string, value: string): void {
-//       throw new Error("Function not implemented.");
-//     }
-//   },
-//   redirect: function (url: string): never {
-//     throw new Error("Function not implemented.");
-//   }
-// })
-
-// auth.signIn('provider', {
-//   email: 'email',
-//   password: 'password'
-// }, {
-//   redirectTo: '/dashboard'
-// })

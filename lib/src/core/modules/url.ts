@@ -10,8 +10,8 @@ export function validateURL(o: unknown, name: string): URLString {
     throw new Error(`${ name } must start with http. Received ${ String(o) }`)
   if (!o.includes('://'))
     throw new Error(`${ name } must include ://. Received ${ String(o) }`)
-  if (o.endsWith('/'))
-    throw new Error(`${ name } must not end with /. Received ${ String(o) }`)
+  // if (o.endsWith('/'))
+  //   throw new Error(`${ name } must not end with /. Received ${ String(o) }`)
   try {
     new URL(o)
   } catch {

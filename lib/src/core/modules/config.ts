@@ -32,7 +32,7 @@ export type Config<
     cookie: CookieConfig,
     header: HeaderConfig,
     session?: SessionConfig,
-    request: Partial<Pick<Request, "method" | "json">>
+    request: Partial<Pick<Request, "method" | "json" | "url">>
     & { originURL: string },
     
   }

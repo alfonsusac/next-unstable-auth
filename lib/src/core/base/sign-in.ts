@@ -20,12 +20,14 @@ export async function signIn
     credentials: ID extends string ? (object | undefined) : ProviderFields<P[ID]>,
     redirectTo: SignInOptions['redirectTo'] | undefined = undefined,
   ) {
-  const provider
-    = $.getProvider(id)
-  const redirectDestination
-    = $.requestCtx.getRedirectURL(redirectTo)
-  const validatedRedirectDestination
-    = $.validateRedirect(redirectDestination)
+  const
+    provider
+      = $.getProvider(id),
+    redirectDestination
+      = $.requestCtx.getRedirectURL(redirectTo),
+    validatedRedirectDestination
+      = $.validateRedirect(redirectDestination)
+
   $.redirectStore.set(validatedRedirectDestination)
 
   const { data, internal }
@@ -36,11 +38,11 @@ export async function signIn
 
   // --- might redirect and cut off here ---
 
-  const rtoken
-    = await $.toToken(data)
-
-  const token
-    = $.validate(rtoken) as Awaited<T>
+  const
+    rtoken
+      = await $.toToken(data),
+    token
+      = $.validate(rtoken) as Awaited<T>
 
   $.sessionStore.set(
     token,
@@ -54,7 +56,7 @@ export async function signIn
   // use redirect URL from initial input not the one stored in redirectStore
   // because those are for redirect after user is at the callback URL.
   if (redirectTo)
-    $.redirect(redirectTo)
+    $.unsafeRedirect(redirectTo)
 
   return $.toSession(token)
 }

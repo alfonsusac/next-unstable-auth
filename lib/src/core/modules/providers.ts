@@ -15,7 +15,7 @@ export type Provider
   > = {
     fields?: (input: unknown) => C,
     authenticate: Authenticate<C, D, I>,
-    authorize: Authorize<I>,
+    authorize?: Authorize<I>,
   }
 
 export type Providers = { [key in string]: Provider }
@@ -168,7 +168,7 @@ export class ProviderHandler<
       internal: any,
       context: RequestContext
     ) =>
-      await this.provider.authorize(internal, context)
+      await this.provider.authorize?.(internal, context)
 
   $fields
     = undefined as P[ID]['fields']
@@ -183,7 +183,7 @@ export type InitializedProvider<
   & {
     id: string,
     callbackURI: string
-    authorize: Parameters<P['authorize']>
+    authorize: P['authorize']
   }
 
 export type InitializedAuthenticate

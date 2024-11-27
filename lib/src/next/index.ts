@@ -6,10 +6,12 @@ import { jwt } from "../util/jwt";
 import { ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
-import { redirect } from "next/navigation";
+import { redirect as next_redirect } from "next/navigation";
 import { isPath, validateURL, type URLString } from "../core/modules/url";
 import { parseNumber } from "../util/parse";
 import { nuAuthBaseUrlEnvKey, nuAuthSecretEnvKey } from "./env-keys";
+import { isReadonlyCookieResponseError } from "../util/cookie";
+import { isRedirectError } from "next/dist/client/components/redirect";
 
 export type NuAuthConfig<
   P extends Providers,
@@ -69,6 +71,9 @@ export function NuAuth<
       forwardedHost = header.get('x-forwarded-host'),
       origin = forwardedProto + '://' + forwardedHost
 
+    console.log("origin: ", origin)
+    console.log("referer: ", referer)
+    
     try {
       validateURL(origin, "Origin URL")
     } catch (error) {
@@ -83,48 +88,36 @@ export function NuAuth<
       toToken: config.toToken,
       toSession: config.toSession,
       validate: config.validate,
+      validateRedirect: config.redirect,
       jwt: {
         sign: jwt.create,
         verify: jwt.verify
       },
+      header,
       cookie: {
         get:
           (name: string) => cookie.get(name)?.value ?? null,
         set:
           (...params) => {
-            try {
-              cookie.set(...params)
-            } catch (error) {
-              // TODO - catch cookie set error
-              console.log('error', error)
+            try { cookie.set(...params) } catch (error) {
+              if (!isReadonlyCookieResponseError(error))
+                throw error
             }
           },
         delete:
           (...params) => {
-            try {
-              cookie.delete(...params)
-            } catch (error) {
-              // TODO - catch cookie set error
-              console.log('error', error)
+            try { cookie.delete(...params) } catch (error) {
+              if (!isReadonlyCookieResponseError(error))
+                throw error
             }
           }
       },
-      header: {
-        get: header.get,
-        set: header.set
-      },
-      redirect: (...params) => {
-        return redirect(params[0])
-      },
-      validateRedirect: (url: string) => {
-        if (!isPath(url))
-          return '/'
-        return url
-      },
+      redirect: (...params) => next_redirect(params[0]),
       request: {
         json: request?.json,
         method: request?.method,
-        originURL: referer ?? request?.url ?? origin
+        url: request?.url,
+        originURL: referer ?? origin
       },
     })
   }
@@ -144,6 +137,7 @@ export function NuAuth<
         return NextResponse.json(data)
 
       } catch (error) {
+        if(isRedirectError(error)) throw error
         // TODO - clean these up
         if (process.env.NODE_ENV === 'development') {
           console.log("Error in Handler. This error message will only be shown in development environment:\n", error)

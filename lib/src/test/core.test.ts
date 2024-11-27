@@ -1,5 +1,6 @@
 import { expect, test, describe, beforeEach, it, vi, beforeAll } from 'vitest'
 import { NuAuth } from '../next'
+import { NextRequest } from 'next/server'
 
 
 vi.mock('next/headers', () => ({
@@ -16,7 +17,6 @@ vi.mock('next/headers', () => ({
         if (name === "x-forwarded-proto") return 'http'
         if (name === "x-forwarded-host") return 'localhost:3000'
         if (name === "referer") return 'http://localhost:3000'
-        console.log(name)
         return "ASD"
       }),
       set: vi.fn((name: string, value: string) => { }),
@@ -26,12 +26,7 @@ vi.mock('next/headers', () => ({
 }))
 
 describe('NextJS Layer', () => {
-  // beforeEach(() => {
-  //   vi.resetAllMocks()
-  // })
-
   describe('Configuration', () => {
-
     describe('Secret', () => {
       describe('is not provided', () => {
         it('should throw error', () => {
@@ -50,6 +45,7 @@ describe('NextJS Layer', () => {
         })
       })
     })
+
     describe('API URL', () => {
       describe('is not provided', () => {
         it('should be set to /auth by default', async () => {
@@ -62,14 +58,26 @@ describe('NextJS Layer', () => {
           const authURL = (await NuAuth({ authURL: 'http://localhost:4000/auth', providers: {} }).context()).config.authURL
           expect(authURL).toEqual('http://localhost:4000/auth')
         })
-        it('should throw error if invalid', () => {
-          expect(() => NuAuth({ authURL: '://localhost:3000', providers: {} })).toThrowError('Invalid URL')
+        it('should throw error if invalid', async () => {
+          await expect(NuAuth({ authURL: '://localhost:3000', providers: {} }).context(new NextRequest('https://www.acme.com'))).rejects.toThrowError('Config.AuthURL must start with http.')
         })
       })
       describe('provided by environment variable', () => {
-
+        it('should be set to the provided value', async () => {
+          vi.stubEnv('NU_AUTH_URL', 'http://localhost:4000/auth')
+          const authURL = (await NuAuth({ providers: {} }).context()).config.authURL
+          expect(authURL).toEqual('http://localhost:4000/auth')
+        })
+        it('should throw error if invalid', async () => {
+          vi.stubEnv('NU_AUTH_URL', '')
+          await expect(NuAuth({ providers: {} }).context(new NextRequest('https://www.acme.com'))).rejects.toThrowError('Config.AuthURL must start with http.')
+        })
       })
     })
+
+    // describe('expiry', () => {
+
+    // })
   })
 })
 

@@ -16,60 +16,7 @@ export const testCallbackURI = vi.fn()
 export const testCredentials = vi.fn()
 export const testInternal = vi.fn()
 
-const mockProviders = {
-  noDefaultUser: {
-    config: Provider({
-      authenticate: async ($) => {
-        testCredentials($.credentials)
-        return ({ data: { name: "John Doe" }, internal: { test: 123 } })
-      },
-      authorize: async (data) => {
-        testInternal(data, "noDefaultUser")
-        return ({ update: false })
-      },
-    }),
-    data: { name: "John Doe" },
-    internal: { test: 123 },
-  },
 
-  generalCase: {
-    config: Provider({
-      authenticate: async ($) => {
-        testCredentials($.credentials)
-        return ({
-          data: { age: 4, [defaultUser]: { id: "asd", name: "1", email: "2", image: "3" } },
-          internal: { lorem: "456" }
-        })
-      },
-      authorize: async (data) => {
-        testInternal(data, "general")
-        return ({ update: false })
-      },
-    }),
-    data: { id: "asd", name: "1", email: "2", image: "3" },
-    internal: { lorem: "456" },
-  },
-
-  generalCaseWithFields: {
-    config: Provider({
-      fields: (values: any) => ({
-        email: values.email as string,
-        password: values.password as string,
-      }),
-      authenticate: async ($) => {
-        testCredentials($.credentials)
-        return ({ data: { age: 4, [defaultUser]: { id: "1", email: $.credentials.email } }, internal: { lorem: "789" } })
-      },
-      authorize: async (data) => {
-        testInternal(data, "withFields")
-        return ({ update: false })
-      },
-    }),
-    data: (name: string) => ({ id: "1", email: name }),
-    internal: { lorem: "789" },
-  }
-
-}
 
 export const mockAuthURL = "https://www.acme.com/ayyopath/auth" as URLString
 export const mockOriginURL = "https://feature-branch.acme.com"
@@ -85,10 +32,6 @@ export const sharedSettings = {
   request: {
     originURL: mockOriginURL,
   },
-  providers: {
-    p1: mockProviders.generalCase.config,
-    p2: mockProviders.generalCaseWithFields.config,
-  },
   validateRedirect: (url: string) => url,
 }
 
@@ -96,53 +39,93 @@ export const sharedSettings = {
 // Tests
 
 describe('Module: Core', () => {
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => vi.clearAllMocks())
 
   describe('Provider + Callback scenarios', () => {
+
+    const mockProviders = {
+      noDefaultUser: {
+        config: Provider({
+          authenticate: async ($) => {
+            testCredentials($.credentials)
+            return ({ data: { name: "John Doe" }, internal: { test: 123 } })
+          },
+          authorize: async (data) => {
+            testInternal(data, "noDefaultUser")
+            return ({ update: false })
+          },
+        }),
+        data: { name: "John Doe" },
+        internal: { test: 123 },
+      },
+
+      generalCase: {
+        config: Provider({
+          authenticate: async ($) => {
+            testCredentials($.credentials)
+            return ({
+              data: { age: 4, [defaultUser]: { id: "asd", name: "1", email: "2", image: "3" } },
+              internal: { lorem: "456" }
+            })
+          },
+          authorize: async (data) => {
+            testInternal(data, "general")
+            return ({ update: false })
+          },
+        }),
+        data: { id: "asd", name: "1", email: "2", image: "3" },
+        internal: { lorem: "456" },
+      },
+
+      generalCaseWithFields: {
+        config: Provider({
+          fields: (values: any) => ({
+            email: values.email as string,
+            password: values.password as string,
+          }),
+          authenticate: async ($) => {
+            testCredentials($.credentials)
+            return ({ data: { age: 4, [defaultUser]: { id: "1", email: $.credentials.email } }, internal: { lorem: "789" } })
+          },
+          authorize: async (data) => {
+            testInternal(data, "withFields")
+            return ({ update: false })
+          },
+        }),
+        data: (name: string) => ({ id: "1", email: name }),
+        internal: { lorem: "789" },
+      }
+    }
 
     it('should throw error if invalid provider and no toToken', async () => {
       const auth = AuthCore({
         ...sharedSettings,
-        providers: {
-          p1: mockProviders.noDefaultUser.config
-        },
+        providers: { p1: mockProviders.noDefaultUser.config },
       })
       await expect(auth.signIn("p1", undefined)).rejects.toThrow("Default User is missing in Provider Authenticate Data Return")
     })
-
     it('should not throw error if invalid provider but with toToken', async () => {
       const auth = AuthCore({
         ...sharedSettings,
-        providers: {
-          p1: mockProviders.noDefaultUser.config
-        },
+        providers: { p1: mockProviders.noDefaultUser.config },
         toToken: (p) => p
       })
       await expect(auth.signIn("p1", undefined)).resolves.toEqual(mockProviders.noDefaultUser.data)
     })
 
-    function withCustomData<T>(p: T) {
-      return {
-        ...p,
-        hello: "world"
-      }
+    const withCustomData = <T>(p: T) => ({ ...p, hello: "world" })
+    const withAnotherCustomData = <T>(p: T) => ({ ...p, foo: "bar" })
+
+    const sharedSettingsForCallbackTests = {
+      ...sharedSettings,
+      providers: {
+        p1: mockProviders.generalCase.config,
+        p2: mockProviders.generalCaseWithFields.config,
+      },
     }
 
-    function withAnotherCustomData<T>(p: T) {
-      return {
-        ...p,
-        foo: "bar"
-      }
-    }
-
-    testSignInMethod(
-      'default toToken and toSession',
-      AuthCore({
-        ...sharedSettings,
-      }),
+    testSignInMethod('default toToken and toSession',
+      AuthCore(sharedSettingsForCallbackTests),
       {
         p1: {
           token: mockProviders.generalCase.data,
@@ -158,11 +141,9 @@ describe('Module: Core', () => {
         }
       }
     )
-
-    testSignInMethod(
-      'custom toToken',
+    testSignInMethod('custom toToken',
       AuthCore({
-        ...sharedSettings,
+        ...sharedSettingsForCallbackTests,
         toToken: (p) => withCustomData(p[defaultUser])
       }),
       {
@@ -180,12 +161,9 @@ describe('Module: Core', () => {
         }
       }
     )
-
-
-    testSignInMethod(
-      'custom toToken and toSession',
+    testSignInMethod('custom toToken and toSession',
       AuthCore({
-        ...sharedSettings,
+        ...sharedSettingsForCallbackTests,
         toToken: (p) => withCustomData(p[defaultUser]),
         toSession: (p) => withAnotherCustomData(p)
       }),
@@ -204,11 +182,9 @@ describe('Module: Core', () => {
         }
       }
     )
-
-    testSignInMethod(
-      'custom toSession',
+    testSignInMethod('custom toSession',
       AuthCore({
-        ...sharedSettings,
+        ...sharedSettingsForCallbackTests,
         toSession: (p) => withAnotherCustomData(p)
       }),
       {
@@ -228,46 +204,38 @@ describe('Module: Core', () => {
     )
   })
 
-  const providerWithMockRedirect = Provider({
-    authenticate: async ($) => {
-      testCallbackURI($.callbackURI)
-      return ({ data: { [defaultUser]: { id: "1" } }, internal: {} })
-    },
-    authorize: async () => ({ update: false }),
-  })
-
-  describe('callback URLs', () => {
+  describe('Callback URLs', () => {
     it('should return correct callback URL', async () => {
       const auth = AuthCore({
         ...sharedSettings,
-        authURL: mockAuthURL,
         providers: {
-          p1: providerWithMockRedirect,
+          p1: Provider({
+            authenticate: async ($) => {
+              testCallbackURI($.callbackURI)
+              return ({ data: { [defaultUser]: { id: "1" } }, internal: {} })
+            },
+            authorize: async () => ({ update: false }),
+          })
         }
       })
-      try {
-        await auth.signIn("p1", undefined)
-      } catch (error) { }
+      try { await auth.signIn("p1", undefined) } catch (error) { }
       expect(testCallbackURI).toBeCalledWith(`${ mockAuthURL }/callback/p1`)
     })
   })
 
-  // ------------------------------------------
-  // REDIRECT URL
-
-  describe('redirect URL', () => {
+  describe('Redirect URL', () => {
 
     const signInAuth = async (
       originURL: string,
       validateRedirect: ((url: string) => string) | undefined,
       redirectTo: URLString | AbsolutePath | undefined,
-    ) => await AuthCore({
-      ...sharedSettings,
-      authURL: mockAuthURL,
-      providers: { p1: providerWithMockRedirect },
-      request: { originURL },
-      validateRedirect,
-    }).signIn("p1", undefined, { redirectTo })
+    ) => await
+        AuthCore({
+          ...sharedSettings,
+          providers: { p1: Provider({ authenticate: async ($) => ({ data: { [defaultUser]: { id: "1" } }, internal: {} }) }), },
+          request: { originURL },
+          validateRedirect,
+        }).signIn("p1", undefined, { redirectTo })
 
     describe('default validateRedirect', () => {
       describe('request have same origin', () => {
@@ -346,7 +314,30 @@ describe('Module: Core', () => {
         })
       })
     })
+
+    describe('redirect initiated by provider', () => {
+      it('should throw no error', async () => {
+        await expect(
+          AuthCore({
+            ...sharedSettings, providers: {
+              p1: Provider({
+                authenticate: async ($) => {
+                  $.requestContext.redirect('http://www.oauthprovider.com/auth')
+                  return ({ data: { [defaultUser]: { id: "1" } }, internal: {} })
+                }
+              })
+            }
+          }).signIn("p1", undefined)
+        ).resolves.not.toThrow()
+        expect(mockRedirect).toBeCalledWith('http://www.oauthprovider.com/auth')
+      })
+    })
   })
+
+  describe('Sign Out', () => {
+    
+  })
+
 })
 
 

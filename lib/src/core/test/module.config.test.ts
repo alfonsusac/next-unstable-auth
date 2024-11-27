@@ -66,7 +66,6 @@ describe('Module: Config', () => {
     { key: "providers", value: null, expectedError: "Config.Providers must be an object" },
     { key: "providers", value: { p1: Provider(null as any) }, expectedError: "Config.Providers.p1 must be an object" },
     { key: "providers", value: { p1: Provider({ authorize: async () => ({ update: false }) } as any) }, expectedError: "Config.Providers.p1.Authenticate must be a function" },
-    { key: "providers", value: { p1: Provider({ authenticate: async () => ({ update: false }) } as any) }, expectedError: "Config.Providers.p1.Authorize must be a function" },
     { key: "providers", value: { p1: Provider({ authenticate: async () => ({ update: false }), authorize: async () => ({ update: false }), fields: 2 } as any), }, expectedError: "Config.Providers.p1.Fields must be a function" },
     { key: "request", value: null, expectedError: "Config.Request must be an object" },
     { key: "request", value: { originURL: 13 }, expectedError: "Config.Request.originURL must be a string. Received 13" },

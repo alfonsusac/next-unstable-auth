@@ -11,8 +11,6 @@ export function getServerFunctions<
 >(
   auth: () => Promise<AuthCore<P, T, S>>
 ) {
-  console.log("")
-
   const getSession
     = async () => {
       const $
