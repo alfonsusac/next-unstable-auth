@@ -11,6 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2 # checkout the repository
     - uses: pnpm/action-setup@v2 # setup pnpm
+      with:
+        version: '9.10.0'
     - uses: actions/setup-node@v3 # setup node
       with:
         node-version: '20'
