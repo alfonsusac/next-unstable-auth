@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./lib
     steps:
     - uses: actions/checkout@v2 # checkout the repository
     - uses: pnpm/action-setup@v2 # setup pnpm
@@ -20,8 +23,6 @@ jobs:
     
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
-      working-directory: ./lib
 
     - name: Build Project
-      run: pnpm run build
-      working-directory: ./lib
+      run: pnpm run compile
