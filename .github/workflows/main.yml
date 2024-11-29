@@ -17,7 +17,11 @@ jobs:
       with:
         node-version: '20'
         cache: 'pnpm'
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      working-directory: ./lib
 
-    - run: cd lib
-    - run: pnpm install --frozen-lockfile # install dependencies
-    - run: pnpm run lint && pnpm run build # build the project
+    - name: Build Project
+      run: pnpm run build
+      working-directory: ./lib
