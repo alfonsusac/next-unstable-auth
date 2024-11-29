@@ -7,6 +7,8 @@ import { testSignInMethod } from "./helper"
 import { mockRedirect } from "./module.config.test"
 import type { AbsolutePath, URLString } from "../modules/url"
 import { nowInSeconds } from "../modules/jwt"
+import { signIn } from "../base/sign-in"
+import base from "../base"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 // Mocks
@@ -34,7 +36,8 @@ export const sharedSettings = {
     originURL: mockOriginURL,
   },
   providers: {
-    p1: Provider({ authenticate: async () => ({ data: { [defaultUser]: { id: "sharedProviderTestID" } }, internal: {} }) })
+    p1: Provider({ authenticate: async () => ({ data: { [defaultUser]: { id: "sharedProviderTestID" } }, internal: {} }) }),
+    pF: Provider({ fields: () => ({ username: "" }), authenticate: async ($) => ({ data: { [defaultUser]: { id: "sharedProviderTestID", name: $.credentials.username } }, internal: {} }) })
   },
   validateRedirect: (url: string) => url,
 }
@@ -473,6 +476,83 @@ describe('Module: Core', () => {
     })
   })
 
+  describe('Request Handler', () => {
+    const handle = async (method: string, url: string, body: object) => AuthCore({ ...sharedSettings, request: { method, url, originURL: url, json: async () => body } }).requestHandler()
+    // const signInSpy = vi.spyOn(base, 'signIn')
+    const checkCSRFSpy = vi.spyOn(base, 'checkCSRF')
+
+    describe('sign-in route', () => {
+      it('should call the checkCSRF method', async () => {
+        await handle('POST', mockAuthURL + '/sign-in/p1', {})
+        expect(checkCSRFSpy).toBeCalled()
+      })
+      describe('invalid provider', () => {
+        it('should throw error', async () => await expect(handle('POST', mockAuthURL + '/sign-in/p2', {})).rejects.toThrow('Invalid provider ID: p2'))
+      })
+      describe('body', () => {
+        const handleWithBody = (body: any) => handle('POST', mockAuthURL + '/sign-in/p1', body)
+        describe('invalid body', () => {
+          describe('wrong datatype', () => {
+            it('should throw error', async () => await expect(handleWithBody(123)).rejects.toThrow('Body must be an object'))
+          })
+          describe('')
+        })
+      })
+      // describe('invalid body', () => {
+      //   it('should throw error', async () => {
+      //     await expect(handle('POST', mockAuthURL + '/sign-in/p1', {})).rejects.toThrow('Provider not found')
+      //   })
+      // })
+      // describe('invalid body', () => {
+      //   it('should throw error', async () => {
+      //     await expect(handle('POST', mockAuthURL + '/sign-in/p1')).rejects.toThrow('Provider not found')
+      //   })
+      // })
+      // describe('valid body', () => {
+
+      // })
+    })
+    // describe('sign-out route', () => {
+    //   it('should call the checkCSRF method')
+    //   it('should call the signOut method')
+    // })
+    // describe('callback route', () => {
+    //   it('should call the callback method')
+    // })
+    // describe('session route', () => {
+    //   it('should call the session method')
+    // })
+    // describe('provider route', () => {
+    //   it('should call the getProvider method')
+    // })
+    // describe('csrf route', () => {
+    //   it('should call the createCsrf method')
+    // })
+    // describe('unknown route', () => {
+    //   it('should return default message')
+    // })
+    // describe('invalid route', () => {
+    //   it('should throw error')
+    // })
+  })
+
+})
+
+
+
+
+
+// https://automationpanda.com/2020/07/07/arrange-act-assert-a-pattern-for-writing-good-tests/
+
+// "arrange"
+describe('the checkcsrf() method', () => {
+  describe('when invalid csrf', () => {
+    // "act"
+    beforeEach(() => { })
+    // "assert"
+    it("should throw error", async () => { })
+    it("should clear cookies", async () => { })
+  })
 })
 
 

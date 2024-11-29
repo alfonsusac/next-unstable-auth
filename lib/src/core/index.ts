@@ -26,50 +26,46 @@ export function AuthCore<
           credentials: string extends ID ? (object | undefined) : ProviderFields<P[ID]>,
           options?: SignInOptions,
         ) => {
-        return base.signIn(
-          $,
-          id,
-          credentials,
-          options?.redirectTo,
-        )
+        return base.signIn($, id, credentials, options?.redirectTo,)
       },
-    callback = async () => base.callback($),
-    signOut = async () => base.signOut($),
-    getSession = async () => base.getSession($),
+    callback
+      = async () => base.callback($),
+    signOut
+      = async () => base.signOut($),
+    getSession
+      = async () => base.getSession($),
     getProvider
-      = <ID extends keyof P>(id: ID extends string ? ID : never) => {
-        return $.getProvider(id)
-      },
-    createCSRF = () => base.createCSRF($),
-    checkCSRF = () => base.checkCSRF($),
+      = <ID extends keyof P>(id: ID extends string ? ID : never) => $.getProvider(id),
+    createCSRF
+      = () => base.createCSRF($),
+    checkCSRF
+      = () => base.checkCSRF($),
     requestHandler
-      = async () => {
+      = async (
+        
+      ) => {
         const isRoute = $.requestCtx.isRoute
-        // TODO - remove this
-        console.log(config.request.originURL)
-        console.log("isRoute", isRoute('GET /csrf'))
         if (isRoute('POST /sign-in')) {
           checkCSRF()
-          const id
-            = $.requestCtx.segments()[1]
-
-          const provider
-            = $.getProvider(id)
+          const
+            id
+              = $.requestCtx.segments()[1],
+            provider
+              = $.getProvider(id)
 
           if (!provider)
             throw new ParameterError('Provider not found')
 
-          const body
-            = await $.requestCtx.body()
 
-          const data
-            = validateSignInBody(body)
-
-          const credentials
-            = provider.hasFields ? data.param_0 : undefined
-
-          const signInOption
-            = provider.hasFields ? data.param_1 : data.param_0
+          const
+            body
+              = await $.requestCtx.body(),
+            data
+              = validateSignInBody(body, provider.hasFields),
+            credentials
+              = provider.hasFields ? data.param_0 : undefined,
+            signInOption
+              = provider.hasFields ? data.param_1 : data.param_0
 
           return signIn(
             id,

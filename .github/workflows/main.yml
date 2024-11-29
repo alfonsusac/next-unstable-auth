@@ -1,0 +1,20 @@
+name: The CI
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2 # checkout the repository
+    - uses: pnpm/action-setup@v2 # setup pnpm
+    - uses: actions/setup-node@v3 # setup node
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - run: pnpm install --frozen-lockfile # install dependencies
+    - run: pnpm run lint && pnpm run build # build the project

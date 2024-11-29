@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { AuthCore } from "../core";
 import { SignInOptions } from "../core/base/sign-in";
 import { DefaultT } from "../core/modules/config";

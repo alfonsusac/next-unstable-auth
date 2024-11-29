@@ -1,9 +1,9 @@
 import { toRuntime, toRuntimeAsync } from "fumadocs-mdx"
-import * as docs_0 from "../content/docs/client.mdx?collection=docs&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
-import * as docs_1 from "../content/docs/index.mdx?collection=docs&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
-import * as docs_2 from "../content/docs/providers/sso.mdx?collection=docs&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
-import * as docs_3 from "../content/docs/reference/config.mdx?collection=docs&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
-import * as docs_4 from "../content/docs/reference/rest.mdx?collection=docs&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
-import * as meta_0 from "../content/docs/meta.json?collection=meta&hash=f54bedf0df1e5fba9cada0332ecead25a88a17cab49c3931b08dc88b60394581"
+import * as docs_0 from "../content/docs/client.mdx?collection=docs&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
+import * as docs_1 from "../content/docs/index.mdx?collection=docs&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
+import * as docs_2 from "../content/docs/providers/sso.mdx?collection=docs&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
+import * as docs_3 from "../content/docs/reference/config.mdx?collection=docs&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
+import * as docs_4 from "../content/docs/reference/rest.mdx?collection=docs&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
+import * as meta_0 from "../content/docs/meta.json?collection=meta&hash=a3fea636db677ae99d7e007bc338bd58332ce9cf4c5cfc6be8dfb2717b3a5c4d"
 export const docs = [toRuntime("doc", docs_0, {"path":"client.mdx","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/client.mdx"}), toRuntime("doc", docs_1, {"path":"index.mdx","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/index.mdx"}), toRuntime("doc", docs_2, {"path":"providers/sso.mdx","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/providers/sso.mdx"}), toRuntime("doc", docs_3, {"path":"reference/config.mdx","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/reference/config.mdx"}), toRuntime("doc", docs_4, {"path":"reference/rest.mdx","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/reference/rest.mdx"})];
 export const meta = [toRuntime("meta", meta_0, {"path":"meta.json","absolutePath":"/Users/alfonsusac/Documents/dev/projects/next-jwt-auth/web/content/docs/meta.json"})];

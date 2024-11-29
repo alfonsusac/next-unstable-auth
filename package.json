@@ -1,5 +1,5 @@
 {
   "name": "next-jwt-auth",
   "private": "false",
-  "license": "ISC"
+  "license": "MIT"
 }

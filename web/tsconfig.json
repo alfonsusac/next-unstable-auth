@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "nextjwtauth": ["../lib/src/index.ts"]
+      // "nextjwtauth": ["../lib/src/index.ts"] // Import from TS source code
+      "nextjwtauth": ["../lib/dist/index.js"] // Import from JS build
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

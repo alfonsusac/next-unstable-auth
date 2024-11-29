@@ -27,59 +27,71 @@ export function getRequestContext($: {
   redirect: Redirect,
 }) {
   const
-    authURL = new URL($.authURL),
-    authPath = authURL.pathname,
-    req = () => {
-      if (!$.request)
-        throw new ConfigError('This operation requires a request object')
-      return $.request
-    },
-    url = () => {
-      const request = req()
-      if (!request.url)
-        throw new ConfigError('This operation requires a URL object')
-      return new URL(request.url)
-    },
-    method = () => req().method,
-    // validate originURL here instead of in the config
-    originUrl = () => {
-      const origin = req().originURL
-      if (!origin)
-        throw new ConfigError('This operation requires an origin URL')
-      return new URL(origin)
-    },
-    getRedirectURL = (url: string | undefined) => {
-      const isProxied = originUrl().origin !== authURL.origin
-      if (isProxied) {
-        return new URL(url ?? '', originUrl()).toString()
-      } else {
-        return url ?? originUrl().pathname
-      }
-    },
-    pathname = () => url().pathname.split(authPath)[1].split('?')[0],
-    segments = () => pathname().split('/').filter(Boolean),
-    isRoute = (route: AuthRoutes) => {
-      try {
-        if (route.split(' ')[0] !== method())
+    authURL
+      = new URL($.authURL),
+    authPath
+      = authURL.pathname,
+    req
+      = () => {
+        if (!$.request)
+          throw new ConfigError('This operation requires a request object')
+        return $.request
+      },
+    url
+      = () => {
+        const request = req()
+        if (!request.url)
+          throw new ConfigError('This operation requires a URL object')
+        return new URL(request.url)
+      },
+    method
+      = () => req().method,
+    // TODO - validate originURL here instead of in the config
+    originUrl
+      = () => {
+        const origin = req().originURL
+        if (!origin)
+          throw new ConfigError('This operation requires an origin URL')
+        return new URL(origin)
+      },
+    getRedirectURL
+      = (url: string | undefined) => {
+        const isProxied = originUrl().origin !== authURL.origin
+        if (isProxied) {
+          return new URL(url ?? '', originUrl()).toString()
+        } else {
+          return url ?? originUrl().pathname
+        }
+      },
+    pathname
+      = () => url().pathname.split(authPath)[1].split('?')[0],
+    segments
+      = () => pathname().split('/').filter(Boolean),
+    isRoute
+      = (route: AuthRoutes) => {
+        try {
+          if (route.split(' ')[0] !== method())
+            return false
+          if (route.split(' ')[1] !== `/${ segments()[0] }`)
+            return false
+          return true
+        } catch (error) {
           return false
-        if (route.split(' ')[1] !== `/${ segments()[0] }`)
-          return false
-        return true
-      } catch (error) {
-        return false
+        }
+      },
+    searchParams
+      = () => url().searchParams,
+    body
+      = async () => {
+        const request = req()
+        if (!request.json)
+          throw new ParameterError('This operation requires a JSON body')
+        try {
+          return await request.json()
+        } catch (error) {
+          throw new ParameterError('Invalid JSON body')
+        }
       }
-    },
-    searchParams = () => url().searchParams,
-    body = async () => {
-      const request = req()
-      if (!request.json)
-        throw new ParameterError('This operation requires a JSON body')
-      try {
-        return await request.json()
-      } catch (error) {
-        throw new ParameterError('Invalid JSON body')
-      }
-    }
 
   return {
     cookie: $.cookie,

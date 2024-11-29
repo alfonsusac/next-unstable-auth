@@ -7,7 +7,7 @@ import { ParameterError } from "../core/modules/error";
 import { getServerFunctions } from "./server-functions";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect as next_redirect } from "next/navigation";
-import { isPath, validateURL, type URLString } from "../core/modules/url";
+import { validateURL, type URLString } from "../core/modules/url";
 import { parseNumber } from "../util/parse";
 import { nuAuthBaseUrlEnvKey, nuAuthSecretEnvKey } from "./env-keys";
 import { isReadonlyCookieResponseError } from "../util/cookie";
@@ -31,7 +31,6 @@ export type NuAuthConfig<
   }
   redirect?: (url: string) => string
 }
-
 
 export function NuAuth<
   P extends Providers,
@@ -141,10 +140,10 @@ export function NuAuth<
         // TODO - clean these up
         if (process.env.NODE_ENV === 'development') {
           console.log("Error in Handler. This error message will only be shown in development environment:\n", error)
-          return Response.json({ error: error instanceof Error ? error.message : error }, { status: 500 })
+          return NextResponse.json({ error: error instanceof Error ? error.message : error }, { status: 500 })
         }
         if (error instanceof ParameterError)
-          return Response.json({ error: 'Invalid Request' }, { status: 400 })
+          return NextResponse.json({ error: 'Invalid Request' }, { status: 400 })
         if (error instanceof Error) {
           console.log("Error in Handler:\n", error)
         }
@@ -170,53 +169,3 @@ export function NuAuth<
     context: auth
   }
 }
-
-
-// - - - - - - - - - - - - - - - - - - - - - - - - 
-// Error Messages
-
-// const auth = NuAuth({
-//   apiRoute: '/auth',
-//   secret: '123',
-//   providers: {
-//     p1: Provider({
-//       authenticate: async () => ({ data: {}, internal: {} }),
-//       authorize: async () => ({ update: false })
-//     }),
-//     cred: Provider({
-//       fields: () => ({
-//         email: 'text',
-//         password: 'text'
-//       }),
-//       authenticate: async ($) => {
-
-//         const db: any = {}
-
-//         // validate credentials
-//         if (!$.credentials.email || !$.credentials.password)
-//           throw new Error('Invalid Credentials')
-
-//         const user = await db.authenticate($.credentials)
-
-//         if (!user)
-//           throw new Error('User not found')
-
-//         return ({
-//           data: {
-//             [defaultUser]: {
-//               id: user.id,
-//               email: user.email,
-//               name: user.name,
-//               image: user.image,
-//             }
-//           },
-//           internal: {}
-//         })
-
-//       },
-//       authorize: async () => ({ update: false })
-//     })
-//   }
-// })
-
-// auth.signIn('p1', { redirectTo: '/a' })
