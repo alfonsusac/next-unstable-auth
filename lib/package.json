@@ -10,7 +10,7 @@
     "test": "vitest run",
     "build": "rm -rf dist && tsc",
     "lint": "tsc --noEmit",
-    "release": "pnpm run lint && pnpm run test && pnpm run build && changeset publish"
+    "release": "pnpm run lint && pnpm run test && pnpm run build"
   },
   "keywords": [],
   "author": "",
