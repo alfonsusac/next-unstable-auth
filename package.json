@@ -3,7 +3,7 @@
   "private": "false",
   "license": "MIT",
   "scripts": {
-    "release": "pnpm run release --prefix ./lib && changeset publish"
+    "release": "cd ./lib && pnpm run release && cd .. && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.10"
