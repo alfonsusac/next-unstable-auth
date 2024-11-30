@@ -5,12 +5,7 @@ on:
       - main
     paths:
       - "lib/**"
-  workflow_dispatch:
-    inputs:
-      publish:
-        description: 'Publish the package'
-        required: false
-        default: 'false'
+      - ".github/workflows/publish.yml"
 
 
 
