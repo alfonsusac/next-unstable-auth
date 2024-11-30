@@ -1,5 +1,8 @@
 {
   "name": "next-jwt-auth",
   "private": "false",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.27.10"
+  }
 }
