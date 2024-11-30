@@ -495,7 +495,7 @@ describe('Module: Core', () => {
           describe('wrong datatype', () => {
             it('should throw error', async () => await expect(handleWithBody(123)).rejects.toThrow('Body must be an object'))
           })
-          describe('')
+          // describe('')
         })
       })
       // describe('invalid body', () => {

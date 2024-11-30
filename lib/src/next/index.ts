@@ -70,8 +70,8 @@ export function NuAuth<
       forwardedHost = header.get('x-forwarded-host'),
       origin = forwardedProto + '://' + forwardedHost
 
-    console.log("origin: ", origin)
-    console.log("referer: ", referer)
+    // console.log("origin: ", origin)
+    // console.log("referer: ", referer)
     
     try {
       validateURL(origin, "Origin URL")
