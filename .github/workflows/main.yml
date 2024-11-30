@@ -25,4 +25,4 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Build Project
-      run: pnpm run compile
+      run: pnpm run build
