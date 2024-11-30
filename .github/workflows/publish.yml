@@ -5,15 +5,17 @@ on:
       - main
     paths:
       - "lib/**"
+      - ".github/workflows/publish.yml"
 
-permissions:
-  contents: write
+
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   build: 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: ./lib
