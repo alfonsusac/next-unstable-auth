@@ -6,10 +6,11 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "vitest",
+    "dev": "vitest", 
+    "test": "vitest run",
     "build": "rm -rf dist && tsc",
     "lint": "tsc --noEmit",
-    "release": "rm -rf dist && tsc && changeset publish"
+    "release": "pnpm run lint && pnpm run test && pnpm run build && changeset publish"
   },
   "keywords": [],
   "author": "",
