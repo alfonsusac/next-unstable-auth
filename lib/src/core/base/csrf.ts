@@ -6,9 +6,9 @@ export function createCSRF(
   $: AuthContext,
 ) {
   const csrf = generateNonce()
-  console.log("Hello? A")
+  // console.log("Hello? A")
   $.csrfStore.set(csrf)
-  console.log("Hello? B")
+  // console.log("Hello? B")
   return csrf
 }
 

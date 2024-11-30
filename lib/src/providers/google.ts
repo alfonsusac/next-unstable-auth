@@ -48,8 +48,6 @@ export const Google = (config: GoogleOAuthConfig) => {
       const nonce = generateNonce()
       await oauthCsrfCookie.set(nonce)
 
-      console.log(nonce)
-
       const codeVerifier = generateNonce()
       await codeVerifierCookie.set(codeVerifier)
 
