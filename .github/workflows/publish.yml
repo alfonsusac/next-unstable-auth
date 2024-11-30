@@ -7,8 +7,7 @@ on:
       - "lib/**"
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
