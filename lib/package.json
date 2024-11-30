@@ -7,8 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "vitest",
-    "compile": "rm -rf dist && tsc",
-    "lint": "tsc --noEmit"
+    "build": "rm -rf dist && tsc",
+    "lint": "tsc --noEmit",
+    "release": "rm -rf dist && tsc && changeset publish"
   },
   "keywords": [],
   "author": "",
